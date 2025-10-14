@@ -1,0 +1,85 @@
+.dashboard-container {
+  display: flex;
+  height: 100vh;
+  font-family: sans-serif;
+}
+
+.sidebar {
+  width: 220px;
+  background: #fff;
+  border-right: 1px solid #eee;
+  padding: 20px;
+}
+
+.sidebar .logo {
+  font-weight: bold;
+  margin-bottom: 20px;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+}
+
+.sidebar ul li {
+  margin-bottom: 12px;
+}
+
+.sidebar ul li a {
+  text-decoration: none;
+  color: #333;
+  padding: 8px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+}
+
+.sidebar ul li a.active,
+.sidebar ul li a:hover {
+  background: #5a4bff;
+  color: white;
+}
+
+.logout {
+  margin-top: auto;
+}
+
+.main-content {
+  flex: 1;
+  background: #f9f9fb;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  background: white;
+  padding: 15px 20px;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.page-content {
+  padding: 20px;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.card {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.activity {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+}

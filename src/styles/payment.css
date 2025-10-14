@@ -1,0 +1,163 @@
+/* --- Modern Payment Page CSS (2025 Style - Consistent with Home) --- */
+
+/* --- 1. Root Variables & Dark Mode (Synced with Home Page) --- */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons+Outlined');
+
+:root {
+  --passenger-primary: #1e88e5;
+  --passenger-secondary: #ff9800;
+  --passenger-background: #f4f5f9;
+  --passenger-card-bg: #ffffff;
+  --passenger-text-primary: #263238;
+  --passenger-text-secondary: #78909c;
+  --passenger-border-color: #e0e0e0;
+  --passenger-glass-bg: rgba(255, 255, 255, 0.7);
+  --passenger-hover-bg: rgba(0,0,0,0.04);
+  --passenger-danger: #dc3545;
+  --passenger-success: #28a745;
+  --soft-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.08);
+  --hover-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.12);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --passenger-background: #000000;
+    --passenger-card-bg: #1c1c1e;
+    --passenger-text-primary: #f5f5f7;
+    --passenger-text-secondary: #8d8d92;
+    --passenger-border-color: #38383a;
+    --passenger-glass-bg: rgba(28, 28, 30, 0.75);
+    --passenger-hover-bg: rgba(255,255,255,0.08);
+  }
+}
+
+/* --- 2. Base & Page Layout --- */
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.payment-page {
+  background-color: var(--passenger-background);
+  min-height: 100vh;
+  font-family: 'Poppins', sans-serif;
+  padding-bottom: 7rem; /* Increased padding for floating nav */
+  color: var(--passenger-text-primary);
+}
+
+/* --- 3. Header --- */
+/* This section is a placeholder; your actual header component will take precedence */
+.passenger-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  max-width: 768px;
+  margin: 0 auto;
+}
+.user-info { display: flex; align-items: center; gap: 0.75rem; font-weight: 500; }
+.header-action-btn { background: none; border: none; color: var(--passenger-text-secondary); cursor: pointer; }
+
+/* --- 4. Main Content & States --- */
+.payment-main {
+  padding: 1rem;
+  max-width: 768px;
+  margin: 0 auto;
+}
+.loading-indicator { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 200px; color: var(--passenger-text-secondary); }
+.error-banner { margin-bottom: 1.5rem; border-radius: 12px; font-weight: 500; }
+
+/* --- 5. Balance & Pending Cards --- */
+.balance-section { margin-bottom: 2rem; }
+.balance-card { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: #fff; border-radius: 20px; padding: 1.75rem 1.5rem; box-shadow: var(--soft-shadow); position: relative; overflow: hidden; }
+.shine-effect { position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 60%); transform: rotate(30deg); pointer-events: none; }
+.balance-card span { font-size: 0.9rem; opacity: 0.8; }
+.balance-card h2 { font-size: 2.8rem; font-weight: 700; margin: 0.25rem 0 1.5rem 0; }
+.balance-actions { text-align: right; }
+.balance-actions .btn { border-radius: 50px; padding: 0.5rem 1.25rem; font-weight: 600; background: #fff; color: var(--passenger-primary); }
+
+.pending-section { margin-bottom: 2rem; }
+.pending-card { background-color: #fff3cd; border: 1px solid #ffeeba; border-radius: 15px; padding: 1.25rem; box-shadow: var(--soft-shadow); }
+.pending-header { display: flex; align-items: center; gap: 0.6rem; color: #856404; font-weight: 600; }
+.pending-details { display: flex; justify-content: space-between; align-items: center; margin: 0.75rem 0; padding-bottom: 1rem; border-bottom: 1px dashed var(--passenger-border-color); }
+.pending-details p { margin: 0; color: var(--passenger-text-primary); }
+.pending-details h4 { margin: 0; color: var(--passenger-danger); font-weight: 700; }
+.pay-button { font-weight: 600; border-radius: 10px; padding: 0.75rem 1rem; }
+.insufficient-balance-text { font-size: 0.85rem; color: var(--passenger-text-secondary); text-align: center; }
+.insufficient-balance-text a { color: var(--passenger-primary); font-weight: 500; text-decoration: none; }
+
+/* --- 6. Section Styles --- */
+h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 1.25rem; padding-left: 1rem; border-left: 5px solid var(--passenger-primary); color: var(--passenger-text-primary); }
+
+.methods-section { margin-bottom: 2rem; }
+.method-card { display: flex; align-items: center; gap: 1rem; background-color: var(--passenger-card-bg); border: 1px solid var(--passenger-border-color); border-radius: 15px; padding: 1rem 1.25rem; margin-bottom: 0.75rem; box-shadow: var(--soft-shadow); transition: all 0.2s ease; }
+.method-card:hover { transform: translateY(-5px); box-shadow: var(--hover-shadow); }
+.method-icon { width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; flex-shrink: 0; font-size: 1.8rem; background: var(--passenger-primary); }
+.method-details { flex-grow: 1; }
+.method-details h4 { font-size: 1.1rem; font-weight: 600; margin: 0; }
+.method-details p { font-size: 0.85rem; color: var(--passenger-text-secondary); margin: 0.1rem 0 0; }
+.add-method { border: 2px dashed var(--passenger-border-color); justify-content: center; cursor: pointer; }
+.add-method:hover { background-color: var(--passenger-hover-bg); }
+
+/* --- 7. Transaction History --- */
+.transactions-section { margin-bottom: 2rem; }
+.transaction-list { background-color: var(--passenger-card-bg); border-radius: 15px; box-shadow: var(--soft-shadow); overflow: hidden; border: 1px solid var(--passenger-border-color); }
+.transaction-item { display: flex; align-items: center; gap: 1rem; padding: 1rem 1.25rem; border-bottom: 1px solid var(--passenger-border-color); }
+.transaction-item:last-child { border-bottom: none; }
+.transaction-icon { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0; }
+.transaction-details { flex-grow: 1; }
+.transaction-details p { font-weight: 500; margin: 0; }
+.transaction-details small { color: var(--passenger-text-secondary); }
+.transaction-amount { font-weight: 600; }
+.transaction-amount.debit { color: var(--passenger-danger); }
+.transaction-amount.credit { color: var(--passenger-success); }
+.no-transactions { text-align: center; padding: 1.5rem; color: var(--passenger-text-secondary); background-color: var(--passenger-card-bg); border-radius: 15px; }
+
+/* --- 8. Modal & Animations --- */
+.modal-content { background-color: var(--passenger-card-bg); border-radius: 15px; border: 1px solid var(--passenger-border-color); }
+.modal-header, .modal-footer { border: none; }
+.modal-title { color: var(--passenger-text-primary); }
+.animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+/* --- 9. Floating Bottom Navigation (Copied from Home) --- */
+.passenger-bottom-nav {
+  position: fixed;
+  bottom: 1rem; left: 1rem; right: 1rem;
+  width: auto; max-width: 500px; margin: 0 auto;
+  display: flex; justify-content: space-around;
+  background-color: var(--passenger-glass-bg);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border-radius: 99px;
+  padding: 0.5rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--passenger-border-color);
+  z-index: 1000;
+}
+.passenger-bottom-nav .nav-item {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-decoration: none;
+  color: var(--passenger-text-secondary);
+  font-size: 11px; font-weight: 600;
+  border-radius: 99px;
+  width: 60px; height: 50px;
+  transition: all 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+}
+.passenger-bottom-nav .nav-item .material-icons { font-size: 22px; }
+.passenger-bottom-nav .nav-item .nav-label { margin-top: 3px; font-size: 0.7rem; }
+
+.passenger-bottom-nav .nav-item:not(.active):hover {
+  color: var(--passenger-text-primary);
+  background-color: var(--passenger-hover-bg);
+  transform: translateY(-2px);
+}
+.passenger-bottom-nav .nav-item.active {
+  background-color: var(--passenger-primary);
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(30, 136, 229, 0.3);
+}

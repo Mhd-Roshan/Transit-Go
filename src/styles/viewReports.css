@@ -1,0 +1,37 @@
+/* --- Admin View Reports Page --- */
+.view-reports-page .page-title { font-size: 1.8rem; font-weight: 700; margin-bottom: 1.5rem; }
+.reports-list { display: grid; gap: 1.5rem; }
+.report-item-card {
+  background: var(--admin-card-bg); border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+.report-header, .report-body, .report-footer { padding: 1rem 1.5rem; }
+.report-header {
+  display: flex; justify-content: space-between; align-items: center;
+  border-bottom: 1px solid var(--admin-border-color); font-size: 0.9rem;
+}
+.status-pill {
+  font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.75rem;
+  border-radius: 99px; text-transform: uppercase;
+}
+.status-pill.pending { background: #fffbe6; color: #d48806; }
+.status-pill.resolved { background: #f6ffed; color: #52c41a; }
+
+.report-body p { margin: 0 0 0.5rem 0; color: var(--admin-text-secondary); }
+.report-body strong { color: var(--admin-text-primary); }
+.report-body .description {
+  margin-top: 1rem; padding: 1rem; border-radius: 8px;
+  background-color: var(--admin-background);
+}
+
+.report-footer { border-top: 1px solid var(--admin-border-color); }
+.reply-view strong { display: block; margin-bottom: 0.5rem; }
+.reply-view p { background: #f0f2f5; padding: 1rem; border-radius: 8px; }
+.reply-form textarea {
+  width: 100%; border: 1px solid var(--admin-border-color);
+  border-radius: 8px; padding: 0.75rem; margin-bottom: 0.75rem;
+}
+.reply-form button {
+  width: 100%; background: var(--admin-primary); color: #fff;
+  border: none; border-radius: 8px; padding: 0.75rem; font-weight: 600;
+}

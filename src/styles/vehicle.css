@@ -1,0 +1,108 @@
+/* --- Modern Vehicle Management CSS (2025 Style - With Modal Fix) --- */
+
+/* --- Page Layout & Header --- */
+.vehicle-management-page .page-title { font-size: 2rem; font-weight: 800; margin-bottom: 0.25rem; }
+.vehicle-management-page .page-subtitle { font-size: 1.1rem; color: var(--admin-text-secondary); margin-top: 0; margin-bottom: 2rem; }
+
+/* --- Form Styling --- */
+.form-card { background-color: var(--admin-card-bg); border-radius: 1rem; padding: 1.5rem; margin-bottom: 2.5rem; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06); border: 1px solid var(--admin-border-color); }
+.form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; margin-bottom: 1.25rem; }
+.form-row .form-group { margin-bottom: 0; }
+.form-group label { display: block; font-weight: 500; margin-bottom: 0.5rem; font-size: 0.9rem; }
+.form-group input { width: 100%; padding: 0.8rem 1rem; border: 1px solid var(--admin-border-color); border-radius: 8px; font-size: 1rem; background-color: var(--admin-background); transition: all 0.2s ease; color: var(--admin-text-primary); } /* Ensure text color is set */
+.form-group input:focus { outline: none; border-color: var(--admin-primary); box-shadow: 0 0 0 3px rgba(88, 86, 214, 0.15); }
+.register-btn { width: 100%; background-color: var(--admin-primary); color: white; border: none; border-radius: 8px; padding: 0.9rem; font-size: 1rem; font-weight: 600; display: flex; justify-content: center; align-items: center; gap: 0.5rem; cursor: pointer; margin-top: 1rem; transition: all 0.2s ease; }
+.register-btn:hover:not(:disabled) { background-color: #4a48c2; }
+.register-btn:disabled { background-color: #8e8e93; cursor: not-allowed; }
+
+/* --- Vehicle List Styling --- */
+.section-title { font-size: 1.4rem; font-weight: 700; margin-bottom: 1.5rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--admin-border-color); }
+.vehicles-list { display: grid; gap: 1.25rem; }
+.vehicle-card { display: flex; justify-content: space-between; align-items: center; gap: 1rem; background-color: var(--admin-card-bg); padding: 1.25rem; border-radius: 1rem; border: 1px solid var(--admin-border-color); box-shadow: 0 2px 8px rgba(0,0,0,0.05); transition: all 0.2s ease; }
+.vehicle-card:hover { transform: translateY(-4px); box-shadow: 0 6px 15px rgba(0,0,0,0.08); }
+.vehicle-info { flex-grow: 1; }
+.vehicle-main-id { font-size: 1.2rem; font-weight: 700; margin: 0 0 0.75rem 0; }
+.vehicle-route { display: flex; align-items: center; gap: 0.5rem; font-size: 1rem; font-weight: 500; color: var(--admin-text-primary); margin-bottom: 0.75rem; }
+.route-arrow { color: var(--admin-text-secondary); }
+.vehicle-sub-details { display: flex; flex-wrap: wrap; gap: 1.5rem; font-size: 0.85rem; color: var(--admin-text-secondary); }
+.vehicle-sub-details span { display: flex; align-items: center; }
+.detail-icon { font-size: 1rem; margin-right: 0.4rem; }
+.card-actions { display: flex; gap: 0.5rem; flex-shrink: 0; }
+.icon-btn { background: var(--admin-background); color: var(--admin-text-secondary); border: none; border-radius: 50%; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease; }
+.icon-btn:hover { background-color: #e5e5ea; }
+.edit-btn:hover { color: var(--admin-primary); }
+.delete-btn:hover { background-color: var(--admin-red); color: white; }
+
+/* --- Error and Dynamic States --- */
+.input-error { border-color: var(--admin-red) !important; }
+.input-error:focus { box-shadow: 0 0 0 3px rgba(255, 59, 48, 0.15) !important; }
+.input-error-message { color: var(--admin-red); font-size: 0.85rem; margin-top: 0.5rem; }
+.error-message { color: var(--admin-red); background-color: rgba(255, 59, 48, 0.1); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; text-align: center; }
+.loading-text, .empty-state { text-align: center; }
+
+/* --- QR Code Button --- */
+.qr-btn:hover {
+  color: #007aff;
+}
+
+/* --- QR Code Modal --- */
+.qr-modal-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 2rem 1rem !important;
+  text-align: center;
+}
+.qr-modal-body h5 {
+  font-weight: 600;
+  color: var(--admin-text-primary);
+  margin: 0;
+}
+.qr-code-wrapper {
+  background: white;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  width: 256px;
+  height: 256px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.qr-modal-body p {
+  font-size: 0.9rem;
+  color: var(--admin-text-secondary);
+  max-width: 250px;
+  margin: 0;
+}
+.modal-footer .btn .material-icons {
+  vertical-align: middle;
+}
+
+/* --- Print Styles --- */
+@media print {
+  body > *:not(.modal-dialog) { display: none; }
+  .modal-dialog { max-width: 100% !important; margin: 0 !important; }
+  .modal-header, .modal-footer { display: none !important; }
+  .modal-content { border: none !important; box-shadow: none !important; }
+}
+
+/* --- FIX FOR EDIT MODAL INPUTS --- */
+.modal-body .form-control {
+  background: var(--admin-background) !important;
+  color: var(--admin-text-primary) !important;
+  border: 1px solid var(--admin-border-color) !important;
+}
+.modal-body .form-control:focus {
+  border-color: var(--admin-primary) !important;
+  box-shadow: 0 0 0 3px rgba(88, 86, 214, 0.25) !important;
+}
+.modal-body input:-webkit-autofill,
+.modal-body input:-webkit-autofill:hover,
+.modal-body input:-webkit-autofill:focus,
+.modal-body input:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--admin-text-primary) !important;
+  -webkit-box-shadow: 0 0 0 30px var(--admin-background) inset !important;
+  box-shadow: 0 0 0 30px var(--admin-background) inset !important;
+}

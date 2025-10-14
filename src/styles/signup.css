@@ -1,0 +1,220 @@
+/* --- Signup Page CSS (Styled to match Login Page - With Explanations) --- */
+
+/* --- 1. Main Card Container --- */
+/*
+  This is the main "glass" box that holds all the content.
+  It's positioned relatively so it can sit on top of the background overlay.
+*/
+.signup-card {
+  position: relative; /* Needed to appear on top of the overlay */
+  z-index: 2;
+  width: 100%;
+  max-width: 450px;
+  padding: 50px 30px;
+  color: #fff;
+  text-align: center;
+
+  /* The Glass Effect (Glassmorphism) */
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px); /* For Safari browser support */
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+}
+
+
+/* --- 2. Header (Logo & Titles) --- */
+/* This section styles the "TransitGo", "Create an Account", etc. text */
+.signup-header { 
+  margin-bottom: 25px; 
+}
+.app-icon { 
+  font-size: 2rem;
+  margin-right: 10px;
+}
+.app-title { 
+  font-size: 2rem;
+  font-weight: 700; 
+  margin: 0;
+}
+.page-title { 
+  font-weight: 600; 
+  margin: 10px 0 5px;
+}
+.page-subtitle { 
+  color: #eee; 
+  margin: 0;
+}
+
+/* --- 3. Banners (for Success or Error Messages) --- */
+/* This is the base style for the message box that appears after submission */
+.banner {
+  padding: 0.50rem;
+  border-radius: 7px;
+  margin-bottom: 1rem;
+  text-align: center;
+  font-weight: 500;
+}
+/* Style for the red error message */
+.error-box {
+  background-color: rgba(255, 59, 48, 0.2);
+  color: #ffbaba;
+  border: 1px solid rgba(255, 59, 48, 0.5);
+}
+/* Style for the green success message */
+.success-box {
+  background-color: rgba(40, 167, 69, 0.2);
+  color: #b8ffc9;
+  border: 1px solid rgba(40, 167, 69, 0.5);
+}
+
+/* --- 4. Role Selector Buttons (Passenger/Operator) --- */
+.role-selector { 
+  display: flex; /* Puts the buttons side-by-side */
+  gap: 0.75rem; 
+  margin-bottom: 1.5rem; 
+}
+.role-btn {
+  flex: 1; /* Makes both buttons take up equal space */
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
+  padding: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+.role-btn:hover { 
+  background: rgba(255, 255, 255, 0.2); /* Slightly lighter on hover */
+}
+/* This style is applied only to the currently selected button */
+.role-btn.active {
+  border-color: #0d6efd;
+  background: rgba(13, 110, 253, 0.2);
+  color: #fff;
+}
+
+/* --- 5. Form, Inputs & Wrappers --- */
+form {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+/* Provides spacing between each input field */
+.form-group { 
+  margin-bottom: 15px;
+}
+
+/* 
+  This is the main style for the wrappers around ALL input fields.
+  It provides the consistent border, background, and focus effect.
+*/
+.input-wrapper,
+.phone-input-group {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  display: flex;
+  align-items: stretch; /* Makes sure children fill the full height */
+  transition: all 0.2s ease;
+  overflow: hidden; /* Keeps child corners rounded */
+}
+/* This powerful selector applies the style when ANY element inside the wrapper is focused */
+.input-wrapper:focus-within,
+.phone-input-group:focus-within {
+  border-color: #fff;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/*
+  This styles the actual <input> tag itself.
+  We make its own border and background invisible because the parent wrapper handles it.
+*/
+.form-control {
+  background: transparent !important; /* Makes the input see-through */
+  border: none !important; /* Removes the input's own border */
+  color: #fff !important;
+  padding: 12px 15px !important;
+  font-size: 1rem !important;
+  width: 100%;
+}
+.form-control:focus { 
+  outline: none !important; /* Removes the default blue glow on click */
+  box-shadow: none !important; 
+}
+.form-control::placeholder { 
+  color: #ccc; 
+}
+
+/* Phone number specific styles */
+.country-code {
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+  color: #ddd;
+  font-weight: 500;
+  background: rgba(0, 0, 0, 0.1); 
+  border-right: 1px solid rgba(255, 255, 255, 0.2);
+}
+.phone-input-group .form-control {
+  padding-left: 12px !important;
+}
+
+
+/* --- 6. Validation Styles --- */
+/* This style applies the red border to the wrapper when there's an error */
+.input-wrapper.input-error,
+.phone-input-group.input-error {
+  border-color: #ff3b30 !important;
+}
+/* This styles the small red error text that appears below the input */
+.input-error-message {
+  color: #ffbaba;
+  font-size: 0.8rem;
+  margin-top: 5px;
+  padding-left: 5px;
+}
+
+/* --- 7. Submit Button & Footer Link --- */
+.submit-btn {
+  background-color: #0d6efd;
+  border: none;
+  padding: 12px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-top: 10px;
+  color: #fff;
+  width: 100%;
+}
+.submit-btn:hover:not(:disabled) { 
+  background-color: #0b5ed7; 
+}
+/* This style applies when the button is disabled during form submission */
+.submit-btn:disabled { 
+  background-color: #0b5ed7; 
+  opacity: 0.7; 
+  cursor: not-allowed; 
+}
+
+/* This styles the "Already have an account? Log In" text */
+.login-link {
+  margin-top: 25px;
+  font-size: 0.9rem;
+  color: #eee;
+}
+.login-link a {
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+}
+.login-link a:hover { 
+  text-decoration: underline; 
+}
