@@ -33,7 +33,11 @@ function AssignOperatorsPage() {
           axios.get("http://localhost:5000/api/assignments", { headers }),
         ]);
         
-        const operators = userRes.data.filter(u => u.role && u.role.toLowerCase() === "operator");
+        // --- THIS IS THE CRITICAL FIX ---
+        // Only include operators who have been approved by an admin.
+        const operators = userRes.data.filter(
+          u => u.role === "Operator" && u.status === "Approved"
+        );
         
         setAllOperators(operators);
         setAllVehicles(vehicleRes.data);
@@ -101,18 +105,12 @@ function AssignOperatorsPage() {
   }, [allVehicles, assignments]);
   
   const availableOperators = useMemo(() => {
-    // --- THIS IS THE FIX ---
-    // We convert every ID to a string to guarantee the comparison works correctly,
-    // preventing any subtle data type mismatches between objects and strings.
     const assignedIds = new Set(
       assignments
         .filter(a => a.operator)
-        .map(a => String(a.operator._id)) // Ensure assigned ID is a string
+        .map(a => String(a.operator._id))
     );
-    
-    // Filter the master list of operators, ensuring their ID is also treated as a string
     return allOperators.filter(op => !assignedIds.has(String(op._id)));
-
   }, [allOperators, assignments]);
 
   const isFormInvalid = !selectedVehicle || !selectedOperator;

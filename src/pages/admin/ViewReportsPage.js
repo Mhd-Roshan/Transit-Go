@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import AdminLayout from '../../layouts/AdminLayout';
-import '../../styles/viewReports.css'; // We will create this
+import '../../styles/viewReports.css'; 
 
 function ViewReportsPage() {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [replyText, setReplyText] = useState({}); // Store reply text for each report
+  const [replyText, setReplyText] = useState({});
 
   useEffect(() => {
     const fetchReports = async () => {
@@ -31,9 +31,8 @@ function ViewReportsPage() {
         { message },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      // Update the report in the state to show the new reply
       setReports(reports.map(r => r._id === reportId ? res.data : r));
-      setReplyText({ ...replyText, [reportId]: '' }); // Clear input field
+      setReplyText({ ...replyText, [reportId]: '' });
     } catch (err) {
       alert("Failed to send reply.");
     }
@@ -48,16 +47,20 @@ function ViewReportsPage() {
             {reports.length > 0 ? reports.map(report => (
               <div key={report._id} className="report-item-card">
                 <div className="report-header">
-                  <span>From: <strong>{report.passenger.fullName}</strong></span>
+                  <span>From: <strong>{report.passenger?.fullName || 'N/A'}</strong></span>
                   <span className={`status-pill ${report.status.toLowerCase()}`}>{report.status}</span>
                 </div>
                 <div className="report-body">
-                  <p><strong>Route:</strong> {report.route}</p>
-                  <p><strong>Time:</strong> {report.timeOfIncident}</p>
-                  <p className="description">{report.description}</p>
+                  {/* --- THIS SECTION IS THE FIX --- */}
+                  <p><strong>Vehicle:</strong> {report.vehicle?.model} ({report.vehicle?.vehicleId || 'N/A'})</p>
+                  <p><strong>Time:</strong> {new Date(report.timeOfIncident).toLocaleString()}</p>
+                  <div className="description">
+                    <strong>Report:</strong>
+                    <p>{report.description}</p>
+                  </div>
                 </div>
                 <div className="report-footer">
-                  {report.reply ? (
+                  {report.reply && report.reply.message ? (
                     <div className="reply-view">
                       <strong>Your Reply:</strong>
                       <p>{report.reply.message}</p>
@@ -65,9 +68,9 @@ function ViewReportsPage() {
                   ) : (
                     <div className="reply-form">
                       <textarea
-                        placeholder="Type your reply here..."
-                        value={replyText[report.id] || ''}
-                        onChange={(e) => setReplyText({ ...replyText, [report.id]: e.target.value })}
+                        placeholder="Type your reply here to resolve the report..."
+                        value={replyText[report._id] || ''}
+                        onChange={(e) => setReplyText({ ...replyText, [report._id]: e.target.value })}
                       ></textarea>
                       <button onClick={() => handleReplySubmit(report._id)}>Send Reply</button>
                     </div>

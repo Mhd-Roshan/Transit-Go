@@ -1,0 +1,171 @@
+/* --- Modern Passenger Layout CSS (2025 Style - Glassmorphism) --- */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+/* --- 1. Root Variables & Dark Mode --- */
+:root {
+  --passenger-primary: #1e88e5;
+  --passenger-background: #f4f5f9;
+  --passenger-card-bg: #ffffff;
+  --passenger-text-primary: #263238;
+  --passenger-text-secondary: #78909c;
+  --passenger-border-color: rgba(224, 224, 224, 0.5); /* Lighter for glass */
+  --passenger-glass-bg: rgba(255, 255, 255, 0.7);
+  --passenger-hover-bg: rgba(0, 0, 0, 0.04);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --passenger-background: #000000;
+    --passenger-card-bg: #1c1c1e;
+    --passenger-text-primary: #f5f5f7;
+    --passenger-text-secondary: #8d8d92;
+    --passenger-border-color: rgba(56, 56, 58, 0.7);
+    --passenger-glass-bg: rgba(28, 28, 30, 0.75);
+    --passenger-hover-bg: rgba(255, 255, 255, 0.08);
+  }
+}
+
+/* --- 2. Base Layout Shell --- */
+.passenger-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: var(--passenger-background);
+  font-family: 'Poppins', sans-serif;
+  /* Add padding to prevent content from being hidden by fixed nav/header */
+  padding-top: 5.5rem; 
+  padding-bottom: 5.5rem;
+}
+
+/* --- 3. Main Content Area --- */
+.passenger-main {
+  flex-grow: 1; /* Allows the main content to fill available space */
+  padding: 1rem;
+  width: 100%;
+  max-width: 768px; /* Max width for content on larger screens */
+  margin: 0 auto;
+}
+
+/* --- 4. FLOATING Header (Glassmorphism) --- */
+.passenger-header-glass {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  right: 1rem;
+  width: auto;
+  max-width: 500px;
+  margin: 0 auto;
+  z-index: 1000;
+  
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  
+  background-color: var(--passenger-glass-bg);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  
+  border-radius: 99px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  border: 1px solid var(--passenger-border-color);
+}
+
+.user-greeting {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.profile-pic {
+  width: 44px;
+  height: 44px;
+}
+.user-greeting span {
+  font-size: 0.85rem;
+  color: var(--passenger-text-secondary);
+}
+.user-greeting h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--passenger-text-primary);
+}
+
+.header-icon-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--passenger-text-secondary);
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+.header-icon-btn:hover {
+  background-color: var(--passenger-hover-bg);
+  color: var(--passenger-primary);
+}
+
+
+/* --- 5. FLOATING Bottom Navigation (Glassmorphism) --- */
+.passenger-bottom-nav-glass {
+  position: fixed;
+  bottom: 1rem;
+  left: 1rem;
+  right: 1rem;
+  width: auto;
+  max-width: 500px;
+  margin: 0 auto;
+  z-index: 1000;
+
+  display: flex;
+  justify-content: space-around;
+  
+  background-color: var(--passenger-glass-bg);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  
+  border-radius: 99px;
+  padding: 0.5rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--passenger-border-color);
+}
+
+.passenger-bottom-nav-glass .nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: var(--passenger-text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 99px;
+  width: 60px;
+  height: 50px;
+  transition: all 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.passenger-bottom-nav-glass .nav-item .material-icons {
+  font-size: 22px;
+}
+.passenger-bottom-nav-glass .nav-item .nav-label {
+  margin-top: 3px;
+  font-size: 0.7rem;
+}
+
+.passenger-bottom-nav-glass .nav-item:not(.active):hover {
+  color: var(--passenger-text-primary);
+  background-color: var(--passenger-hover-bg);
+  transform: translateY(-2px);
+}
+
+.passenger-bottom-nav-glass .nav-item.active {
+  background-color: var(--passenger-primary);
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(30, 136, 229, 0.3);
+}

@@ -15,10 +15,11 @@
   --admin-glass-bg: rgba(248, 248, 248, 0.7);
   --admin-glass-border: rgba(229, 229, 234, 0.8);
 
-  /* --- NEW: iOS-Style Glass Variables for Active/Hover Items --- */
+  /* Variables for Active/Hover Items */
   --admin-glass-active-bg: rgba(255, 255, 255, 0.5);
   --admin-glass-hover-bg: rgba(229, 229, 234, 0.5);
   --admin-glass-active-highlight: rgba(255, 255, 255, 0.8);
+  --admin-nav-hover: rgba(142, 142, 147, 0.12);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -33,10 +34,11 @@
     --admin-glass-bg: rgba(28, 28, 30, 0.65);
     --admin-glass-border: rgba(56, 56, 58, 0.7);
 
-    /* --- NEW: Dark Mode iOS-Style Glass --- */
+    /* Dark Mode iOS-Style Glass */
     --admin-glass-active-bg: rgba(255, 255, 255, 0.12);
     --admin-glass-hover-bg: rgba(255, 255, 255, 0.08);
     --admin-glass-active-highlight: rgba(255, 255, 255, 0.2);
+    --admin-nav-hover: rgba(152, 152, 157, 0.24);
   }
 }
 
@@ -80,7 +82,6 @@ body {
   top: 0;
   z-index: 1000;
 }
-/* ... Other header styles remain the same ... */
 .header-brand { display: flex; align-items: center; gap: 0.75rem; color: var(--admin-primary); }
 .header-brand h1 { font-size: 1.25rem; font-weight: 700; margin: 0; }
 .header-actions { display: flex; align-items: center; gap: 0.75rem; }
@@ -89,7 +90,6 @@ body {
 .notification-badge { position: absolute; top: 6px; right: 6px; background-color: var(--admin-red); color: white; border-radius: 50%; width: 16px; height: 16px; font-size: 10px; display: flex; justify-content: center; align-items: center; border: 2px solid var(--admin-card-bg); }
 .user-menu { display: flex; align-items: center; gap: 0.5rem; background-color: var(--admin-nav-hover); padding: 4px; border-radius: 99px; }
 .profile-pic { width: 32px; height: 32px; border-radius: 50%; }
-.logout-btn { width: 32px; height: 32px; }
 
 
 /* --- 5. Main Content Area (With Scrolling) --- */
@@ -136,28 +136,21 @@ body {
   border-radius: 99px;
   width: 60px;
   height: 50px;
-  /* Use a transparent background for the inactive state */
   background-color: transparent;
   transition: all 0.25s cubic-bezier(0.25, 1, 0.5, 1);
 }
 .nav-item .material-icons { font-size: 22px; }
 .nav-item .nav-label { margin-top: 3px; }
 
-/* --- REFINED: Hover state now uses a subtle glass effect --- */
 .nav-item:not(.active):hover {
   color: var(--admin-text-primary);
   background-color: var(--admin-glass-hover-bg);
   transform: translateY(-2px);
 }
 
-/* --- REFINED: iOS-Style Glass Active State --- */
 .nav-item.active { 
-  /* The frosted glass background for the active item */
   background-color: var(--admin-glass-active-bg);
-  /* The icon and text color for the active item */
   color: var(--admin-primary);
-  /* This creates the subtle inner highlight effect */
   box-shadow: inset 0 0 0 1.5px var(--admin-glass-active-highlight);
-  
   transform: translateY(-2px);
 }

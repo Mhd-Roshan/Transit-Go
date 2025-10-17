@@ -6,7 +6,7 @@ import '../styles/authLayout.css'; // We will create this new CSS file
 const AuthLayout = ({ children }) => {
   return (
     // We use '/t5.jpg' from the login page for a consistent background
-    <div className="auth-wrapper" style={{ backgroundImage: `url('/t5.jpg')` }}>
+    <div className="auth-wrapper" style={{ backgroundImage: `url('/t5.png')` }}>
       <div className="auth-overlay"></div>
       {/* This renders the actual login or signup card */}
       {children}

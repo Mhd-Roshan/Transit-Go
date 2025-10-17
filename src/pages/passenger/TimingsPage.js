@@ -3,7 +3,8 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Spinner, Image } from 'react-bootstrap';
 import jwtDecode from 'jwt-decode';
-import PassengerBottomNav from '../../components/PassengerBottomNav';
+// removed inline nav: now provided by PassengerLayout
+import PassengerLayout from '../../layouts/PassengerLayout';
 import '../../styles/timings.css';
 
 // Using the same Modern Header as the Home Page for consistency
@@ -152,10 +153,9 @@ function TimingsPage() {
   };
 
   return (
-    <div className="timings-page">
-      <ModernPassengerHeader user={user} onLogout={handleLogout} />
-      
-      <main className="timings-main">
+    <PassengerLayout>
+      <div className="timings-page">
+        <main className="timings-main">
         <section className="hero-section animate-fade-in">
           <h2>Bus Schedules</h2>
           <p>Find real-time schedules and route information.</p>
@@ -174,10 +174,9 @@ function TimingsPage() {
           <h3>Upcoming Buses</h3>
           {renderContent()}
         </section>
-      </main>
-      
-      <PassengerBottomNav />
-    </div>
+        </main>
+      </div>
+    </PassengerLayout>
   );
 }
 

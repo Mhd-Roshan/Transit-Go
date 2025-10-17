@@ -3,8 +3,8 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Spinner } from 'react-bootstrap';
 import jwtDecode from 'jwt-decode';
-import PassengerHeader from '../../components/PassengerHeader';
-import PassengerBottomNav from '../../components/PassengerBottomNav';
+// header and bottom nav now provided by PassengerLayout
+import PassengerLayout from '../../layouts/PassengerLayout';
 import '../../styles/report.css';
 
 function ReportPage() {
@@ -12,9 +12,10 @@ function ReportPage() {
   const [user, setUser] = useState(null); 
   const [vehicles, setVehicles] = useState([]);
   const [selectedVehicle, setSelectedVehicle] = useState('');
+  
   const [timeOfIncident, setTimeOfIncident] = useState('');
   const [description, setDescription] = useState('');
-  const [fileName, setFileName] = useState('');
+  const [fileName, setFileName] = useState(''); // Note: File upload logic is not implemented
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState({ success: null, message: '' });
@@ -33,14 +34,13 @@ function ReportPage() {
     const fetchVehicles = async () => {
       setLoading(true);
       try {
-        // --- THIS IS THE FIX: Port changed from 3000 to 5000 ---
         const res = await axios.get("http://localhost:5000/api/vehicles", {
           headers: { Authorization: `Bearer ${token}` }
         });
         setVehicles(res.data);
       } catch (err) {
         console.error("Failed to fetch vehicles", err);
-        setSubmitStatus({ success: false, message: 'Could not load vehicles.' });
+        setSubmitStatus({ success: false, message: 'Could not load vehicle options.' });
       } finally {
         setLoading(false);
       }
@@ -48,7 +48,11 @@ function ReportPage() {
     fetchVehicles();
   }, [navigate]);
 
-  const handleFileChange = (e) => { /* ... */ };
+  const handleFileChange = (e) => {
+    if (e.target.files.length > 0) {
+      setFileName(e.target.files[0].name);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -60,12 +64,12 @@ function ReportPage() {
     setSubmitStatus({ success: null, message: '' });
     try {
       const token = localStorage.getItem("token");
-      // --- THIS IS THE FIX: Port changed from 3000 to 5000 ---
       const res = await axios.post("http://localhost:5000/api/reports", 
         { vehicleId: selectedVehicle, timeOfIncident, description },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setSubmitStatus({ success: true, message: res.data.msg });
+      // Reset form on success
       setSelectedVehicle('');
       setTimeOfIncident('');
       setDescription('');
@@ -78,15 +82,15 @@ function ReportPage() {
   };
 
   return (
-    <div className="report-page">
-      <PassengerHeader user={user} />
-      <main className="report-main">
+    <PassengerLayout>
+      <div className="report-page">
+        <main className="report-main">
         <div className="report-card">
           <h1 className="form-title">Submit a Report</h1>
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} noValidate>
             <div className="form-group">
               <label htmlFor="vehicle">Vehicle</label>
-              <select id="vehicle" value={selectedVehicle} onChange={(e) => setSelectedVehicle(e.target.value)} disabled={loading}>
+              <select id="vehicle" value={selectedVehicle} onChange={(e) => setSelectedVehicle(e.target.value)} required disabled={loading}>
                 <option value="">{loading ? 'Loading vehicles...' : 'Select Vehicle'}</option>
                 {vehicles.map(vehicle => (
                   <option key={vehicle._id} value={vehicle._id}>
@@ -95,14 +99,18 @@ function ReportPage() {
                 ))}
               </select>
             </div>
+            
             <div className="form-group">
               <label htmlFor="time">Time of Incident</label>
-              <input type="text" id="time" value={timeOfIncident} onChange={(e) => setTimeOfIncident(e.target.value)} />
+              {/* --- CHANGE: Input type changed for better UX --- */}
+              <input type="datetime-local" id="time" value={timeOfIncident} onChange={(e) => setTimeOfIncident(e.target.value)} required />
             </div>
+
             <div className="form-group">
               <label htmlFor="description">Description of Report</label>
-              <textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)}></textarea>
+              <textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Please provide as much detail as possible..." required></textarea>
             </div>
+
             <div className="form-group">
               <label>Attach Media (Optional)</label>
               <div className="file-upload-box">
@@ -125,9 +133,9 @@ function ReportPage() {
             </button>
           </form>
         </div>
-      </main>
-      <PassengerBottomNav />
-    </div>
+        </main>
+      </div>
+    </PassengerLayout>
   );
 }
 

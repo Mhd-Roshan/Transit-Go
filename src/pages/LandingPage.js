@@ -5,7 +5,6 @@ import '../styles/landing.css';
 
 const LandingHeader = () => {
   const navigate = useNavigate();
-  const goToLogin = () => navigate('/login');
 
   return (
     <Navbar expand="md" fixed="top" className="landing-header">
@@ -44,7 +43,7 @@ function LandingPage() {
       <main className="hero-section">
         {/* --- Background Video --- */}
         <video autoPlay muted loop playsInline className="background-video">
-          <source src="/t7.mp4" type="video/mp4" />
+          <source src="/t1.mp4" type="video/mp4" />
           Your browser does not support the video tag.
         </video>
 

@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Spinner } from 'react-bootstrap';
 import  jwtDecode  from 'jwt-decode';
-import PassengerHeader from '../../components/PassengerHeader';
-import PassengerBottomNav from '../../components/PassengerBottomNav';
+// header and bottom nav now provided by PassengerLayout
+import PassengerLayout from '../../layouts/PassengerLayout';
 import '../../styles/history.css';
 
 function HistoryPage() {
@@ -98,9 +98,9 @@ function HistoryPage() {
   };
 
   return (
-    <div className="history-page">
-      <PassengerHeader user={user} />
-      <main className="history-main">
+    <PassengerLayout>
+      <div className="history-page">
+        <main className="history-main">
         <h1 className="page-title">Trips</h1>
         <p className="page-subtitle">View your past trips and their details.</p>
         <div className="search-container">
@@ -140,9 +140,9 @@ function HistoryPage() {
             <p>You have not submitted any reports.</p>
           )}
         </div>
-      </main>
-      <PassengerBottomNav />
-    </div>
+        </main>
+      </div>
+    </PassengerLayout>
   );
 }
 

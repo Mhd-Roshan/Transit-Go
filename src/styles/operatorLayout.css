@@ -1,0 +1,37 @@
+.dashboard-header {
+  position: sticky;
+  top: 0;
+  z-index: 1030;
+}
+
+.dashboard-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 1020;
+  border-top: 1px solid rgba(0,0,0,0.06);
+}
+
+.min-vh-100 {
+  min-height: 100vh;
+}
+
+.bg-light {
+  background-color: #f7f9fc !important;
+}
+
+.container {
+  max-width: 960px;
+}
+
+.nav-link.text-secondary small,
+.nav-link.text-secondary .material-icons,
+.nav-link.text-secondary svg {
+  color: #6c757d !important;
+}
+
+.nav-link.text-primary small,
+.nav-link.text-primary .material-icons,
+.nav-link.text-primary svg {
+  color: #0d6efd !important;
+}
+

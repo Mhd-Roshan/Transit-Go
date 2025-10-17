@@ -17,6 +17,7 @@ import ReportPage from "./pages/passenger/ReportPage.js";
 // Operator Pages (from the 'operator' subfolder)
 import OperatorDashboard from "./pages/operator/Dashboard.js";
 import OperatorRoutesPage from "./pages/operator/OperatorRoutesPage.js";
+import OperatorLayout from "./layouts/OperatorLayout.js";
 
 // Admin Pages (from the 'admin' subfolder)
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage.js";
@@ -43,9 +44,12 @@ function AppRouter() {
          <Route path="/report" element={<ReportPage />} /> 
 
         {/* --- OPERATOR ROUTES --- */}
-        <Route path="/operator/dashboard" element={<OperatorDashboard />} />
-        <Route path="/operator/routes" element={<OperatorRoutesPage />} />
-
+        <Route path="/operator" element={<OperatorLayout />}>
+          <Route path="dashboard" element={<OperatorDashboard />} />
+          <Route path="routes" element={<OperatorRoutesPage />} />
+        </Route>
+       
+        
         {/* --- ADMIN ROUTES --- */}
         <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
         <Route path="/admin/users" element={<UserManagementPage />} />
