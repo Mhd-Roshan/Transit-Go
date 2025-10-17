@@ -1,29 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Modal, Spinner } from 'react-bootstrap';
 import QrScanner from '../../components/QrScanner';
-import PassengerLayout from '../../layouts/PassengerLayout'; // Use the new layout
+import PassengerLayout from '../../layouts/PassengerLayout';
 import '../../styles/home.css';
-
-// Helper to generate dynamic, realistic schedules for the UI
-const generateSchedules = (routes) => {
-  const now = new Date();
-  let lastDeparture = new Date(now.getTime() + (Math.random() * 5 + 2) * 60000); // First bus in 2-7 mins
-
-  return routes.slice(0, 4).map(() => { // Show max 4 upcoming buses
-    const statuses = ['On Time', 'On Time', 'On Time', 'Scheduled', 'Delayed'];
-    const currentDeparture = new Date(lastDeparture.getTime());
-    const interval = (Math.random() * 15 + 10) * 60000; // Next bus in 10-25 mins
-    lastDeparture = new Date(lastDeparture.getTime() + interval);
-    
-    return {
-      departureTime: currentDeparture,
-      status: statuses[Math.floor(Math.random() * statuses.length)],
-    };
-  });
-};
-
 
 function HomePage() {
   const navigate = useNavigate();
@@ -33,18 +14,16 @@ function HomePage() {
   const [upcomingBuses, setUpcomingBuses] = useState([]);
   const [busesError, setBusesError] = useState('');
   const [destination, setDestination] = useState("");
-  const [fareDetails, setFareDetails] = useState(null);
   const [loadingFare, setLoadingFare] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
-  const [suggestions] = useState(["City Center", "Tech Park", "Old Town", "Airport", "University"]);
-  const [recentSearches, setRecentSearches] = useState(() => {
-    try {
-      const saved = localStorage.getItem('recentDestinations');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [activeTab, setActiveTab] = useState('search');
+
+  // State for the post-scan payment modal
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [scannedVehicleId, setScannedVehicleId] = useState(null);
+  const [destinationInModal, setDestinationInModal] = useState("");
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [paymentResult, setPaymentResult] = useState({ status: '', message: '' });
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -53,13 +32,10 @@ function HomePage() {
       setLoadingBalance(true);
       setBalanceError('');
       try {
-        const res = await axios.get("http://localhost:5000/api/payments/balance", {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const res = await axios.get("http://localhost:5000/api/payments/balance", { headers: { Authorization: `Bearer ${token}` } });
         setBalance(res.data.balance);
       } catch (err) {
-        console.error("Failed to fetch balance.", err);
-        setBalanceError('Unable to load wallet balance right now.');
+        setBalanceError('Unable to load wallet.');
       } finally {
         setLoadingBalance(false);
       }
@@ -68,17 +44,12 @@ function HomePage() {
     const fetchUpcomingBuses = async () => {
         setBusesError('');
         try {
-            const res = await axios.get("http://localhost:5000/api/fares", {
+            const res = await axios.get("http://localhost:5000/api/assignments/active", {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            const schedules = generateSchedules(res.data);
-            const buses = res.data.slice(0, 4).map((route, index) => ({
-                ...route,
-                schedule: schedules[index]
-            }));
-            setUpcomingBuses(buses);
+            setUpcomingBuses(res.data.slice(0, 4));
         } catch (err) {
-            console.error("Failed to fetch upcoming buses/routes.", err);
+            console.error("Failed to fetch upcoming buses.", err);
             setBusesError('Unable to load upcoming buses.');
         }
     };
@@ -90,22 +61,11 @@ function HomePage() {
   const handleGetFare = async () => {
     if (!destination) { alert("Please enter a destination."); return; }
     setLoadingFare(true);
-    setFareDetails(null);
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.post("http://localhost:5000/api/trips/calculate-fare", 
-        { destination }, 
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      // Simulate creating a pending trip and navigating
+      const res = await axios.post("http://localhost:5000/api/trips/calculate-fare", { destination }, { headers: { Authorization: `Bearer ${token}` } });
       const pendingTrip = { destination, amount: res.data.amount };
       localStorage.setItem('pendingTrip', JSON.stringify(pendingTrip));
-      // Save destination to recent searches (dedup, max 5)
-      try {
-        const updated = [destination, ...recentSearches.filter(d => d.toLowerCase() !== destination.toLowerCase())].slice(0, 5);
-        setRecentSearches(updated);
-        localStorage.setItem('recentDestinations', JSON.stringify(updated));
-      } catch {}
       navigate('/payment');
     } catch (err) {
       alert(err.response?.data?.msg || "Could not calculate fare.");
@@ -116,32 +76,94 @@ function HomePage() {
   
   const handleScanSuccess = (decodedText) => {
     setShowScanner(false);
-    // The QR code should ideally contain a vehicle ID or route ID.
-    // For this demo, we'll assume it's a destination name.
-    setDestination(decodedText);
+    try {
+      let vehicleId = null;
+      if (decodedText.includes('vehicle=')) {
+        const urlParams = new URLSearchParams(decodedText.split('?')[1]);
+        vehicleId = urlParams.get('vehicle');
+      }
+
+      if (vehicleId) {
+        setScannedVehicleId(vehicleId);
+        setShowPaymentModal(true);
+        setDestinationInModal("");
+        setPaymentResult({ status: '', message: '' });
+      } else {
+        setDestination(decodedText);
+        setActiveTab('search');
+        alert(`Scanned destination: ${decodedText}`);
+      }
+    } catch (error) {
+      console.error("Error processing QR Code:", error);
+      alert("Could not process the scanned QR Code.");
+    }
+  };
+
+  const handleConfirmPayment = async () => {
+    if (!destinationInModal) {
+      setPaymentResult({ status: 'error', message: 'Please enter a destination.' });
+      return;
+    }
+    setIsProcessingPayment(true);
+    setPaymentResult({ status: '', message: '' });
+    const token = localStorage.getItem("token");
+    
+    try {
+      // Step 1: Calculate Fare
+      const fareRes = await axios.post(
+        "http://localhost:5000/api/trips/calculate-fare",
+        { destination: destinationInModal },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const fareAmount = fareRes.data.amount;
+
+      // Step 2: Charge the wallet
+      const chargeRes = await axios.post(
+        "http://localhost:5000/api/payments/charge",
+        {
+          amount: fareAmount,
+          description: `Trip to ${destinationInModal} (Vehicle ID: ...${scannedVehicleId.slice(-6)})`
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      // --- THIS IS THE RESTORED/CRITICAL FIX ---
+      // Step 3: Save the trip to history AFTER payment is successful
+      await axios.post(
+        "http://localhost:5000/api/trips",
+        {
+          destination: destinationInModal,
+          fare: fareAmount
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // Step 4: Handle UI success (only if all steps above succeeded)
+      setPaymentResult({ status: 'success', message: `${chargeRes.data.message} Fare: ₹${fareAmount}` });
+      setBalance(chargeRes.data.newBalance);
+
+    } catch (err) {
+      // Step 5: Catch ANY error from the process and show it to the user
+      const errorMessage = err.response?.data?.msg || "An unexpected error occurred. Your trip was not recorded.";
+      console.error("Payment or Trip Save Error:", err);
+      alert(`Error: ${errorMessage}`);
+      
+      setPaymentResult({ status: 'error', message: errorMessage });
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
+
+  const closeModalAndReset = () => {
+    setShowPaymentModal(false);
+    setScannedVehicleId(null);
   };
 
   return (
     <PassengerLayout>
-      {/* The content inside is the 'children' for the layout */}
-      <div className="passenger-home-page">
-        {/* --- Greeting Banner --- */}
-        <section className="greeting-banner animate-fade-in">
-          <div className="greeting-text">
-            <span className="material-icons-outlined">waving_hand</span>
-            <h2>
-              {(() => {
-                const hour = new Date().getHours();
-                if (hour < 12) return 'Good morning';
-                if (hour < 18) return 'Good afternoon';
-                return 'Good evening';
-              })()} 👋
-            </h2>
-            <p>Plan your trip and pay seamlessly.</p>
-          </div>
-        </section>
+      <div>
+        {/* The Greeting Banner has been removed */}
 
-        {/* --- Wallet Balance Card --- */}
         <section className="balance-overview-section animate-fade-in">
           <div className="balance-card">
             <div className="balance-info">
@@ -157,85 +179,72 @@ function HomePage() {
           </div>
         </section>
 
-        {/* --- Fare Search Card --- */}
-        <section className="hero-section animate-fade-in" style={{ animationDelay: '100ms' }}>
-          <h1 className="section-title">Where to next?</h1>
-          <div className="fare-search-card">
-            <div className="input-group-creative">
-              <span className="material-icons icon-end">location_on</span>
-              <input type="text" value={destination} onChange={(e) => setDestination(e.target.value)} placeholder="Enter your destination" />
+        <section className="trip-starter-section animate-fade-in" style={{ animationDelay: '100ms' }}>
+          <div className="trip-starter-card">
+            <div className="tab-nav">
+              <button className={`tab-btn ${activeTab === 'search' ? 'active' : ''}`} onClick={() => setActiveTab('search')}>
+                  <span className="material-icons-outlined">search</span> Search Destination
+              </button>
+              <button className={`tab-btn ${activeTab === 'scan' ? 'active' : ''}`} onClick={() => { setActiveTab('scan'); setShowScanner(true); }}>
+                  <span className="material-icons-outlined">qr_code_scanner</span> Scan & Pay
+              </button>
             </div>
-            {(recentSearches.length > 0 || suggestions.length > 0) && (
-              <div className="destination-chips">
-                {recentSearches.map((d) => (
-                  <button key={`r-${d}`} type="button" className="chip recent" onClick={() => setDestination(d)} title="Recent">
-                    <span className="material-icons">history</span>
-                    {d}
+            <div className="tab-content">
+              {activeTab === 'search' && (
+                <div className="search-tab-content animate-fade-in">
+                  <div className="input-group-creative">
+                    <span className="material-icons-outlined">location_on</span>
+                    <input type="text" value={destination} onChange={(e) => setDestination(e.target.value)} placeholder="Enter your destination" />
+                  </div>
+                  <button className="btn-fare" onClick={handleGetFare} disabled={loadingFare}>
+                    {loadingFare ? <Spinner as="span" size="sm" /> : "Find Bus & Pay"}
                   </button>
-                ))}
-                {suggestions.map((d) => (
-                  <button key={`s-${d}`} type="button" className="chip" onClick={() => setDestination(d)}>
-                    {d}
-                  </button>
-                ))}
-              </div>
-            )}
-            {fareDetails && (
-              <div className="fare-result">
-                Estimated Fare: <span>₹{fareDetails.amount}</span>
-              </div>
-            )}
-            <button className="btn-fare" onClick={handleGetFare} disabled={loadingFare}>
-              {loadingFare ? <Spinner as="span" size="sm" /> : "Find Bus & Pay"}
-            </button>
+                </div>
+              )}
+              {activeTab === 'scan' && (
+                <div className="scan-tab-content animate-fade-in">
+                    <div className="scan-tab-icon">
+                        <span className="material-icons-outlined">qr_code_2</span>
+                    </div>
+                    <h4>Ready to Scan</h4>
+                    <p>Click the 'Scan & Pay' tab again to open your camera and scan a bus QR code.</p>
+                </div>
+              )}
+            </div>
           </div>
         </section>
         
-        {/* --- Upcoming Buses Section --- */}
         <section className="upcoming-buses-section animate-fade-in" style={{ animationDelay: '200ms' }}>
             <h2 className="section-title">Upcoming Buses</h2>
             <div className="bus-list">
                 {upcomingBuses.length > 0 ? upcomingBuses.map(bus => {
-                    const diffMinutes = Math.round((bus.schedule.departureTime - new Date()) / 60000);
-                    const departsInText = diffMinutes <= 0 ? 'Departed' : `In ${diffMinutes} min`;
+                    if (!bus || !bus.vehicle) return null;
+                    const diffMinutes = Math.round((new Date(bus.departureTime) - new Date()) / 60000);
+                    const departsInText = diffMinutes <= 0 ? 'Departing' : `In ${diffMinutes} min`;
                     return (
                         <div key={bus._id} className="bus-card">
+                            <div className="bus-card-icon"><span className="material-icons-outlined">directions_bus</span></div>
                             <div className="bus-card-details">
-                                <h4>{bus.routeName}</h4>
-                                <p>To: <strong>{bus.endPoint}</strong></p>
+                                <h4>{bus.vehicle?.model} ({bus.vehicle?.vehicleId})</h4>
+                                <p>To: <strong>{bus.vehicle?.destination}</strong></p>
                             </div>
                             <div className="bus-card-timing">
                                 <span className="departs-in">{departsInText}</span>
-                                <span className={`status-badge ${bus.schedule.status.toLowerCase().replace(' ', '-')}`}>{bus.schedule.status}</span>
+                                <span className={`status-badge ${bus.status.toLowerCase().replace(' ', '-')}`}>{bus.status}</span>
                             </div>
                         </div>
                     );
                 }) : (
-                  busesError ? (
-                    <p className="no-buses-msg">{busesError}</p>
-                  ) : (
-                    <p className="no-buses-msg">No upcoming buses found.</p>
-                  )
+                  busesError ? <p className="no-buses-msg">{busesError}</p> : <p className="no-buses-msg">No active buses found. Check back later.</p>
                 )}
             </div>
         </section>
 
-        {/* --- Quick Actions Section --- */}
-        <section className="quick-actions animate-fade-in" style={{ animationDelay: '300ms' }}>
-          <div className="action-card" onClick={() => setShowScanner(true)}>
-            <div className="action-icon scan-icon"><span className="material-icons">qr_code_scanner</span></div>
-            <h4>Scan & Go</h4>
-            <p>Scan bus QR for quick entry</p>
-          </div>
-          <div className="action-card" onClick={() => navigate('/timings')}>
-            <div className="action-icon book-icon"><span className="material-icons">schedule</span></div>
-            <h4>Schedules</h4>
-            <p>View all routes and timings</p>
-          </div>
-          <div className="action-card" onClick={() => navigate('/history')}>
-            <div className="action-icon book-icon"><span className="material-icons">history</span></div>
-            <h4>History</h4>
-            <p>See your recent trips</p>
+        <section className="quick-actions-section animate-fade-in" style={{ animationDelay: '300ms' }}>
+          <h2 className="section-title">More Actions</h2>
+          <div className="quick-actions">
+            <div className="action-card" onClick={() => navigate('/timings')}><div className="action-icon book-icon"><span className="material-icons-outlined">schedule</span></div><h4>Schedules</h4><p>View all routes</p></div>
+            <div className="action-card" onClick={() => navigate('/history')}><div className="action-icon book-icon"><span className="material-icons-outlined">history</span></div><h4>History</h4><p>See your trips</p></div>
           </div>
         </section>
 
@@ -243,7 +252,50 @@ function HomePage() {
           <Modal.Header closeButton><Modal.Title>Scan Bus QR Code</Modal.Title></Modal.Header>
           <Modal.Body>
             {showScanner && <QrScanner onScanSuccess={handleScanSuccess} />}
-            <p className="text-center mt-3">Point your camera at the QR code</p>
+            <p className="text-center mt-3">Point your camera at the QR code on the bus.</p>
+          </Modal.Body>
+        </Modal>
+
+        <Modal show={showPaymentModal} onHide={closeModalAndReset} centered backdrop="static">
+          <Modal.Header closeButton>
+            <Modal.Title>Confirm Your Trip</Modal.Title>
+          </Modal.Header>
+          <Modal.Body className="payment-modal-body">
+            {paymentResult.status ? (
+              <div className={`payment-result ${paymentResult.status}`}>
+                <span className="material-icons-outlined result-icon">
+                  {paymentResult.status === 'success' ? 'check_circle' : 'error'}
+                </span>
+                <h4>{paymentResult.status === 'success' ? 'Payment Successful!' : 'Payment Failed'}</h4>
+                <p>{paymentResult.message}</p>
+                <button className="btn-fare" onClick={closeModalAndReset}>Close</button>
+              </div>
+            ) : (
+              <>
+                <div className="vehicle-info-display">
+                  <span className="material-icons-outlined">directions_bus</span>
+                  <div>
+                    <span>Vehicle Scanned</span>
+                    <strong>ID: ...{scannedVehicleId?.slice(-6)}</strong>
+                  </div>
+                </div>
+
+                <div className="input-group-creative">
+                  <span className="material-icons-outlined">flag</span>
+                  <input 
+                    type="text" 
+                    placeholder="Enter your destination" 
+                    value={destinationInModal}
+                    onChange={(e) => setDestinationInModal(e.target.value)}
+                    disabled={isProcessingPayment}
+                  />
+                </div>
+
+                <button className="btn-fare" onClick={handleConfirmPayment} disabled={isProcessingPayment}>
+                  {isProcessingPayment ? <Spinner as="span" size="sm" /> : "Calculate Fare & Auto-Pay"}
+                </button>
+              </>
+            )}
           </Modal.Body>
         </Modal>
       </div>

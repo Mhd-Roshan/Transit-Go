@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import AuthLayout from "../layouts/AuthLayout"; // Import the new layout
+import AuthLayout from "../layouts/AuthLayout";
 import "../styles/signup.css";
 
 function SignupPage() {
+  // --- THIS IS THE CORRECTED LINE ---
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -19,6 +20,11 @@ function SignupPage() {
   const [successMessage, setSuccessMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
+
+  // State for password visibility
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
+
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -114,18 +120,45 @@ function SignupPage() {
             </div>
             {errors.phoneNumber && <p className="input-error-message">{errors.phoneNumber}</p>}
           </div>
+
           <div className="form-group">
-            <div className={`input-wrapper ${errors.password ? 'input-error' : ''}`}>
-              <input type="password" name="password" placeholder="Password (min. 6 characters)" className="form-control" value={formData.password} onChange={handleInputChange} />
+            <div className={`input-wrapper password-wrapper ${errors.password ? 'input-error' : ''}`}>
+              <input
+                type={passwordVisible ? "text" : "password"}
+                name="password"
+                placeholder="Password (min. 6 characters)"
+                className="form-control"
+                value={formData.password}
+                onChange={handleInputChange}
+              />
+              <span className="password-toggle-icon" onClick={() => setPasswordVisible(!passwordVisible)}>
+                <span className="material-icons">
+                  {passwordVisible ? "visibility_off" : "visibility"}
+                </span>
+              </span>
             </div>
             {errors.password && <p className="input-error-message">{errors.password}</p>}
           </div>
+          
           <div className="form-group">
-            <div className={`input-wrapper ${errors.confirmPassword ? 'input-error' : ''}`}>
-              <input type="password" name="confirmPassword" placeholder="Confirm Password" className="form-control" value={formData.confirmPassword} onChange={handleInputChange} />
+            <div className={`input-wrapper password-wrapper ${errors.confirmPassword ? 'input-error' : ''}`}>
+              <input
+                type={confirmPasswordVisible ? "text" : "password"}
+                name="confirmPassword"
+                placeholder="Confirm Password"
+                className="form-control"
+                value={formData.confirmPassword}
+                onChange={handleInputChange}
+              />
+              <span className="password-toggle-icon" onClick={() => setConfirmPasswordVisible(!confirmPasswordVisible)}>
+                <span className="material-icons">
+                  {confirmPasswordVisible ? "visibility_off" : "visibility"}
+                </span>
+              </span>
             </div>
             {errors.confirmPassword && <p className="input-error-message">{errors.confirmPassword}</p>}
           </div>
+          
           <button type="submit" className="submit-btn" disabled={isSubmitting}>
             {isSubmitting ? 'Creating Account...' : 'Sign Up'}
           </button>

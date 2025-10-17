@@ -4,11 +4,10 @@ import AdminLayout from "../../layouts/AdminLayout";
 import "../../styles/fares.css"; 
 
 function Faresmgt() {
-  const [collections, setCollections] = useState([]);
+  const [reportData, setReportData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // --- NEW: State for filters and their dropdown data ---
   const [allVehicles, setAllVehicles] = useState([]);
   const [allOperators, setAllOperators] = useState([]);
   const [filters, setFilters] = useState({
@@ -18,7 +17,6 @@ function Faresmgt() {
     operatorId: ''
   });
 
-  // Fetch initial data for filter dropdowns (vehicles & operators)
   useEffect(() => {
     const fetchFilterData = async () => {
       const token = localStorage.getItem("token");
@@ -37,9 +35,8 @@ function Faresmgt() {
     fetchFilterData();
   }, []);
 
-  // Fetch collections whenever a filter changes
   useEffect(() => {
-    const fetchCollections = async () => {
+    const fetchRevenueReport = async () => {
       setLoading(true);
       setError("");
       try {
@@ -51,19 +48,19 @@ function Faresmgt() {
           operatorId: filters.operatorId || undefined,
         };
 
-        const res = await axios.get(`http://localhost:5000/api/collections`, {
+        const res = await axios.get(`http://localhost:5000/api/dashboard/revenue-report`, {
           headers: { Authorization: `Bearer ${token}` },
           params,
         });
-        setCollections(res.data);
+        setReportData(res.data);
       } catch (err) {
-        setError("Failed to fetch collections.");
+        setError("Failed to fetch revenue report.");
         console.error(err);
       } finally {
         setLoading(false);
       }
     };
-    fetchCollections();
+    fetchRevenueReport();
   }, [filters]);
 
   const handleFilterChange = (e) => {
@@ -74,15 +71,14 @@ function Faresmgt() {
     setFilters({ startDate: '', endDate: '', vehicleId: '', operatorId: '' });
   };
 
-  const totalFilteredRevenue = collections.reduce((sum, item) => sum + item.amount, 0);
+  const totalFilteredRevenue = reportData.reduce((sum, item) => sum + item.amount, 0);
 
   return (
     <AdminLayout>
       <div className="fare-management-page animate-fade-in">
-        <h2 className="page-title">Fare Collections</h2>
-        <p className="page-subtitle">Review and filter all daily revenue from each vehicle.</p>
+        <h2 className="page-title">Revenue Report</h2>
+        <p className="page-subtitle">Review passenger payments and operator cash collections.</p>
         
-        {/* --- NEW: Advanced Filter Card --- */}
         <div className="filter-card">
           <div className="filter-grid">
             <div className="form-group">
@@ -117,36 +113,46 @@ function Faresmgt() {
           </div>
         </div>
 
-        <h3 className="section-title">Collection Records</h3>
+        <h3 className="section-title">Revenue Records</h3>
         {loading ? (
-          <p className="loading-text">Loading collections...</p>
+          <p className="loading-text">Loading records...</p>
         ) : error ? (
           <p className="error-message">{error}</p>
-        ) : collections.length === 0 ? (
+        ) : reportData.length === 0 ? (
           <div className="empty-state">
-            <span className="material-icons empty-icon">search_off</span>
-            <h4 className="empty-title">No Collections Found</h4>
-            <p className="empty-subtitle">Try adjusting your filters or wait for new collections to be submitted.</p>
+            <span className="material-icons empty-icon">receipt_long</span>
+            <h4 className="empty-title">No Revenue Found</h4>
+            <p className="empty-subtitle">No records match your current filters.</p>
           </div>
         ) : (
           <div className="collections-list">
-            {collections.map((collection, index) => (
-              <div key={collection._id} className="collection-card" style={{ animationDelay: `${index * 50}ms` }}>
+            {reportData.map((item, index) => (
+              <div key={item._id} className="collection-card" style={{ animationDelay: `${index * 50}ms` }}>
                 <div className="collection-info">
-                  <p className="vehicle-id">{collection.vehicle?.vehicleId || "N/A"}</p>
+                  <p className="vehicle-id">{item.description}</p>
                   <div className="sub-details">
-                    <p className="operator-name">
-                      <span className="material-icons">person</span>
-                      {collection.operator?.fullName || "N/A"}
+                    <p>
+                      <span className="material-icons">
+                        {item.type === 'Passenger Payment' ? 'person' : 'engineering'}
+                      </span>
+                      {item.userName || "N/A"}
                     </p>
-                    <p className="collection-date">
+                    {item.vehicleId && (
+                        <p>
+                            <span className="material-icons">directions_bus</span>
+                            {item.vehicleId}
+                        </p>
+                    )}
+                    <p>
                       <span className="material-icons">event</span>
-                      {new Date(collection.collectionDate).toLocaleDateString('en-GB')}
+                      {new Date(item.date).toLocaleString('en-GB')}
                     </p>
                   </div>
                 </div>
                 <div className="amount-section">
-                  <p className="collection-amount">₹{collection.amount.toLocaleString('en-IN')}</p>
+                  <p className="collection-amount" style={{ color: item.type === 'Operator Collection' ? 'var(--admin-orange)' : 'var(--admin-primary)' }}>
+                    ₹{item.amount.toLocaleString('en-IN')}
+                  </p>
                 </div>
               </div>
             ))}

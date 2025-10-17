@@ -1,12 +1,13 @@
 import express from 'express';
-import Fare from '../models/Fares.js'; // Make sure you have the Fare model created
+import Fare from '../models/Fares.js'; // Assumes Fare model exists and is correct
+import authMiddleware from '../middleware/authMiddleware.js'; // Recommended to protect routes
 
 const router = express.Router();
 
 // @route   POST api/fares
 // @desc    Create a new fare or route
-// @access  Private (should be admin-only)
-router.post('/', async (req, res) => {
+// @access  Private (Admin)
+router.post('/', authMiddleware, async (req, res) => {
   const { routeName, startPoint, endPoint, price } = req.body;
 
   // Basic validation
@@ -26,29 +27,29 @@ router.post('/', async (req, res) => {
     res.status(201).json(fare); // Respond with the newly created fare
 
   } catch (err) {
-    console.error(err.message);
+    console.error("Error creating fare:", err.message);
     res.status(500).send('Server Error');
   }
 });
 
 // @route   GET api/fares
 // @desc    Get all fares
-// @access  Private
-router.get('/', async (req, res) => {
+// @access  Private (Authenticated Users)
+router.get('/', authMiddleware, async (req, res) => {
   try {
     // Find all fares and sort them by the creation date in descending order (newest first)
     const fares = await Fare.find().sort({ creationDate: -1 });
     res.json(fares);
   } catch (err) {
-    console.error(err.message);
+    console.error("Error fetching fares:", err.message);
     res.status(500).send('Server Error');
   }
 });
 
 // @route   DELETE api/fares/:id
 // @desc    Delete a fare by its ID
-// @access  Private
-router.delete('/:id', async (req, res) => {
+// @access  Private (Admin)
+router.delete('/:id', authMiddleware, async (req, res) => {
     try {
         const fare = await Fare.findById(req.params.id);
 
@@ -63,8 +64,8 @@ router.delete('/:id', async (req, res) => {
         res.json({ msg: 'Fare removed successfully' });
 
     } catch (err) {
-        console.error(err.message);
-        // Check for invalid ID format
+        console.error("Error deleting fare:", err.message);
+        // Check for invalid ID format (e.g., /api/fares/invalid-id)
         if (err.kind === 'ObjectId') {
             return res.status(404).json({ msg: 'Fare not found' });
         }

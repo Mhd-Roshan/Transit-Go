@@ -1,4 +1,4 @@
-/* --- Modern Payment Page CSS (2025 Style - Consistent with Home) --- */
+/* --- Modern Payment Page CSS (2025 Style - Final Polish) --- */
 
 /* --- 1. Root Variables & Dark Mode (Synced with Home Page) --- */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
@@ -6,19 +6,17 @@
 @import url('https://fonts.googleapis.com/icon?family=Material+Icons+Outlined');
 
 :root {
-  --passenger-primary: #1e88e5;
-  --passenger-secondary: #ff9800;
-  --passenger-background: #f4f5f9;
+  --passenger-primary: #007aff;
+  --passenger-secondary: #ff9f0a;
+  --passenger-background: #f2f2f7;
   --passenger-card-bg: #ffffff;
-  --passenger-text-primary: #263238;
-  --passenger-text-secondary: #78909c;
-  --passenger-border-color: #e0e0e0;
-  --passenger-glass-bg: rgba(255, 255, 255, 0.7);
-  --passenger-hover-bg: rgba(0,0,0,0.04);
-  --passenger-danger: #dc3545;
-  --passenger-success: #28a745;
-  --soft-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.08);
-  --hover-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.12);
+  --passenger-text-primary: #1d1d1f;
+  --passenger-text-secondary: #6e6e73;
+  --passenger-border-color: #e5e5ea;
+  --passenger-input-bg: #f2f2f7;
+  --status-green: #30d158; --status-red: #ff453a; --status-yellow: #ff9f0a;
+  --status-green-bg: rgba(48, 209, 88, 0.15); --status-red-bg: rgba(255, 69, 58, 0.15); --status-yellow-bg: rgba(255, 159, 10, 0.15);
+  --soft-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -28,88 +26,148 @@
     --passenger-text-primary: #f5f5f7;
     --passenger-text-secondary: #8d8d92;
     --passenger-border-color: #38383a;
-    --passenger-glass-bg: rgba(28, 28, 30, 0.75);
-    --passenger-hover-bg: rgba(255,255,255,0.08);
+    --passenger-input-bg: #2c2c2e;
+    --status-green-bg: rgba(48, 209, 88, 0.2); --status-red-bg: rgba(255, 69, 58, 0.2); --status-yellow-bg: rgba(255, 159, 10, 0.2);
   }
 }
 
-/* --- 2. Base & Page Layout --- */
-/* These styles are placeholders now that PassengerLayout is used */
-
-/* --- 3. Main Content & States --- */
-.payment-main {
-  padding: 1rem;
-  max-width: 768px;
-  margin: 0 auto;
+/* --- 2. Animations & Base Layout --- */
+@keyframes fade-in { 
+  from { opacity: 0; transform: translateY(15px); } 
+  to { opacity: 1; transform: translateY(0); } 
 }
-.loading-indicator { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 200px; color: var(--passenger-text-secondary); }
+.animate-fade-in {
+  opacity: 0;
+  animation: fade-in 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+.payment-page-content {
+  /* This is the main content wrapper inside the scrollable layout */
+}
+
+/* --- 3. Dynamic States (Loading, Error) --- */
+.loading-indicator { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 40vh; color: var(--passenger-text-secondary); gap: 1rem; }
 .error-banner { margin-bottom: 1.5rem; border-radius: 12px; font-weight: 500; }
 
 /* --- 4. Balance & Pending Cards --- */
 .balance-section { margin-bottom: 2rem; }
-.balance-card { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: #fff; border-radius: 20px; padding: 1.75rem 1.5rem; box-shadow: var(--soft-shadow); position: relative; overflow: hidden; }
-.shine-effect { position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 60%); transform: rotate(30deg); pointer-events: none; }
+.balance-card {
+  background: linear-gradient(135deg, var(--passenger-primary) 0%, #5856d6 100%);
+  color: #fff;
+  border-radius: 24px;
+  padding: 1.75rem 1.5rem;
+  box-shadow: 0 12px 35px rgba(0, 122, 255, 0.25);
+  position: relative;
+  overflow: hidden;
+}
+.shine-effect { position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 60%); pointer-events: none; }
 .balance-card span { font-size: 0.9rem; opacity: 0.8; }
 .balance-card h2 { font-size: 2.8rem; font-weight: 700; margin: 0.25rem 0 1.5rem 0; }
 .balance-actions { text-align: right; }
-.balance-actions .btn { border-radius: 50px; padding: 0.5rem 1.25rem; font-weight: 600; background: #fff; color: var(--passenger-primary); }
+.balance-actions .btn { border-radius: 50px; padding: 0.6rem 1.25rem; font-weight: 600; background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255,255,255,0.3); color: #fff; transition: all 0.2s ease; }
+.balance-actions .btn:hover { background: rgba(255,255,255,0.25); }
 
 .pending-section { margin-bottom: 2rem; }
-.pending-card { background-color: #fff3cd; border: 1px solid #ffeeba; border-radius: 15px; padding: 1.25rem; box-shadow: var(--soft-shadow); }
-.pending-header { display: flex; align-items: center; gap: 0.6rem; color: #856404; font-weight: 600; }
-.pending-details { display: flex; justify-content: space-between; align-items: center; margin: 0.75rem 0; padding-bottom: 1rem; border-bottom: 1px dashed var(--passenger-border-color); }
+.pending-card {
+  background-color: var(--status-yellow-bg);
+  border: 1px solid var(--status-yellow);
+  color: var(--status-yellow);
+  border-radius: 1.25rem;
+  padding: 1.25rem;
+  box-shadow: var(--soft-shadow);
+  transition: all 0.3s ease;
+}
+.pending-header { display: flex; align-items: center; gap: 0.6rem; font-weight: 600; }
+.pending-details { display: flex; justify-content: space-between; align-items: center; margin: 0.75rem 0; padding-bottom: 1rem; border-bottom: 1px dashed var(--status-yellow); }
 .pending-details p { margin: 0; color: var(--passenger-text-primary); }
-.pending-details h4 { margin: 0; color: var(--passenger-danger); font-weight: 700; }
-.pay-button { font-weight: 600; border-radius: 10px; padding: 0.75rem 1rem; }
+.pending-details h4 { margin: 0; color: var(--status-red); font-weight: 700; }
+.pay-button { font-weight: 600; border-radius: 10px; padding: 0.75rem 1rem; width: 100%; margin-top: 0.5rem; }
 .insufficient-balance-text { font-size: 0.85rem; color: var(--passenger-text-secondary); text-align: center; }
 .insufficient-balance-text a { color: var(--passenger-primary); font-weight: 500; text-decoration: none; }
 
-/* --- 5. Section Styles --- */
-/* 
-  --- THIS IS THE FIX ---
-  The selector has been changed from a generic `h2` to a more specific one
-  that only targets the headers inside the correct sections.
-*/
-.methods-section h2,
-.transactions-section h2 { 
-  font-size: 1.4rem; 
-  font-weight: 700; 
+/* --- 5. Section Titles --- */
+.section-title { 
+  font-size: 1.3rem; 
+  font-weight: 600; 
   margin-bottom: 1.25rem; 
   padding-left: 1rem; 
-  border-left: 5px solid var(--passenger-primary); 
+  border-left: 4px solid var(--passenger-primary); 
   color: var(--passenger-text-primary); 
 }
 
-.methods-section { margin-bottom: 2rem; }
-.method-card { display: flex; align-items: center; gap: 1rem; background-color: var(--passenger-card-bg); border: 1px solid var(--passenger-border-color); border-radius: 15px; padding: 1rem 1.25rem; margin-bottom: 0.75rem; box-shadow: var(--soft-shadow); transition: all 0.2s ease; }
-.method-card:hover { transform: translateY(-5px); box-shadow: var(--hover-shadow); }
-.method-icon { width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; flex-shrink: 0; font-size: 1.8rem; background: var(--passenger-primary); }
-.method-details { flex-grow: 1; }
-.method-details h4 { font-size: 1.1rem; font-weight: 600; margin: 0; }
-.method-details p { font-size: 0.85rem; color: var(--passenger-text-secondary); margin: 0.1rem 0 0; }
-.add-method { border: 2px dashed var(--passenger-border-color); justify-content: center; cursor: pointer; }
-.add-method:hover { background-color: var(--passenger-hover-bg); }
-
 /* --- 6. Transaction History --- */
 .transactions-section { margin-bottom: 2rem; }
-.transaction-list { background-color: var(--passenger-card-bg); border-radius: 15px; box-shadow: var(--soft-shadow); overflow: hidden; border: 1px solid var(--passenger-border-color); }
+.transaction-list { background-color: var(--passenger-card-bg); border-radius: 1.25rem; box-shadow: var(--soft-shadow); overflow: hidden; border: 1px solid var(--passenger-border-color); }
 .transaction-item { display: flex; align-items: center; gap: 1rem; padding: 1rem 1.25rem; border-bottom: 1px solid var(--passenger-border-color); }
 .transaction-item:last-child { border-bottom: none; }
-.transaction-icon { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0; }
+.transaction-icon {
+  width: 40px; height: 40px; border-radius: 50%; display: flex;
+  align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;
+}
+.transaction-icon.credit { background-color: var(--status-green-bg); color: var(--status-green); }
+.transaction-icon.debit { background-color: var(--status-red-bg); color: var(--status-red); }
 .transaction-details { flex-grow: 1; }
-.transaction-details p { font-weight: 500; margin: 0; }
-.transaction-details small { color: var(--passenger-text-secondary); }
-.transaction-amount { font-weight: 600; }
-.transaction-amount.debit { color: var(--passenger-danger); }
-.transaction-amount.credit { color: var(--passenger-success); }
-.no-transactions { text-align: center; padding: 1.5rem; color: var(--passenger-text-secondary); background-color: var(--passenger-card-bg); border-radius: 15px; }
+.transaction-details p { font-weight: 500; margin: 0; color: var(--passenger-text-primary); }
+.transaction-details small { color: var(--passenger-text-secondary); font-size: 0.8rem; }
+.transaction-amount { font-weight: 600; font-size: 1.05rem; }
+.transaction-amount.debit { color: var(--passenger-text-primary); }
+.transaction-amount.credit { color: var(--status-green); }
+.no-transactions { text-align: center; padding: 2rem; color: var(--passenger-text-secondary); background-color: var(--passenger-card-bg); border-radius: 1.25rem; border: 1px dashed var(--passenger-border-color); }
 
-/* --- 7. Modal & Animations --- */
-.modal-content { background-color: var(--passenger-card-bg); border-radius: 15px; border: 1px solid var(--passenger-border-color); }
+/* --- 7. Modal --- */
+.modal-content { background-color: var(--passenger-card-bg); border-radius: 1.25rem; border: 1px solid var(--passenger-border-color); }
 .modal-header, .modal-footer { border: none; }
-.modal-title { color: var(--passenger-text-primary); }
-.animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.modal-title { color: var(--passenger-text-primary); font-weight: 600; }
+.modal-body .form-control, .modal-body .form-select { background-color: var(--passenger-input-bg); }
 
-/* --- 8. Floating Bottom Navigation --- */
-/* These styles are now handled by passengerLayout.css */
+
+/* --- 8. NEW: Countdown Timer & Warning Styles --- */
+.payment-warning {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--passenger-text-secondary);
+  background-color: rgba(0,0,0,0.03);
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  margin-top: 1rem;
+}
+.payment-warning .material-icons-outlined {
+  font-size: 1rem;
+}
+
+.countdown-timer {
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--passenger-text-secondary);
+  margin-top: 0.5rem;
+  margin-bottom: 1rem;
+}
+.countdown-timer span {
+  font-weight: 600;
+  color: var(--passenger-text-primary);
+  background-color: rgba(0,0,0,0.05);
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  margin-left: 0.5rem;
+  letter-spacing: 1px; /* Mono-spacing effect */
+}
+.countdown-timer.expired {
+  font-weight: 600;
+  color: var(--status-red);
+}
+
+.pending-card.expired {
+  background-color: var(--status-red-bg);
+  border-color: var(--status-red);
+  color: var(--status-red);
+}
+
+@media (prefers-color-scheme: dark) {
+  .payment-warning {
+    background-color: rgba(255,255,255,0.05);
+  }
+  .countdown-timer span {
+    background-color: rgba(255,255,255,0.08);
+  }
+}

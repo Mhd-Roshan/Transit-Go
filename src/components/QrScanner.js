@@ -1,49 +1,62 @@
 import React, { useEffect, useRef } from 'react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 
-const QrScanner = ({ onScanSuccess }) => {
-  // Use a ref to keep a stable reference to the scanner instance
+const QrScanner = ({ onScanSuccess, onScanFailure }) => {
   const scannerRef = useRef(null);
 
   useEffect(() => {
-    // Initialize the scanner
-    scannerRef.current = new Html5QrcodeScanner(
-      'qr-reader', // The ID of the div element below
-      {
-        qrbox: {
-          width: 250,
-          height: 250,
+    // Ensure the scanner is only initialized once.
+    if (!scannerRef.current) {
+      const scanner = new Html5QrcodeScanner(
+        'qr-reader',
+        {
+          qrbox: {
+            width: 250,
+            height: 250,
+          },
+          fps: 10,
         },
-        fps: 10,
-      },
-      false // verbose
-    );
+        false // verbose
+      );
 
-    const handleSuccess = (decodedText, decodedResult) => {
-      // When a scan is successful, call the parent's handler
-      onScanSuccess(decodedText);
-    };
+      const handleSuccess = async (decodedText, decodedResult) => {
+        // --- THIS IS THE CRITICAL FIX ---
+        // Do not immediately call the parent. First, stop the scanner.
+        if (scannerRef.current) {
+          try {
+            // The stop() method is asynchronous and returns a promise.
+            await scanner.stop();
+            // Once stopped successfully, THEN call the parent's success handler.
+            onScanSuccess(decodedText);
+          } catch (err) {
+            console.error("Failed to stop the scanner.", err);
+            // Still try to call the parent handler even if stopping fails.
+            onScanSuccess(decodedText);
+          }
+        }
+      };
 
-    const handleError = (errorMessage) => {
-      // This function is required, but we can leave it empty
-      // console.error("QR Scan Error:", errorMessage);
-    };
+      const handleError = (errorMessage) => {
+        // This function is required, but we can call a parent handler if provided.
+        if (onScanFailure) {
+          onScanFailure(errorMessage);
+        }
+      };
 
-    // Start scanning
-    scannerRef.current.render(handleSuccess, handleError);
+      // Start rendering the scanner
+      scanner.render(handleSuccess, handleError);
+      scannerRef.current = scanner;
+    }
 
-    // --- This is the cleanup function that runs when the component unmounts ---
+    // This cleanup function handles the case where the user closes the modal manually.
     return () => {
-      if (scannerRef.current) {
-        // Stop scanning and clean up the camera feed
+      if (scannerRef.current && scannerRef.current.getState() === 2) { // 2 is SCANNING state
         scannerRef.current.clear().catch(error => {
-          // This catch block is the key fix.
-          // It silently handles the "NotFoundError" if React has already removed the element.
-          console.error("Failed to clear html5QrcodeScanner. This is expected on success.", error);
+          console.error("Cleanup failed. This can happen on success.", error);
         });
       }
     };
-  }, [onScanSuccess]);
+  }, [onScanSuccess, onScanFailure]);
 
   return <div id="qr-reader" style={{ border: 'none' }} />;
 };

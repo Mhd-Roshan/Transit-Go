@@ -1,24 +1,24 @@
+// src/pages/operator/Dashboard.js
+
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Card, Spinner, Form, Button, Alert } from "react-bootstrap"; 
+import { Card, Spinner, Alert } from "react-bootstrap";
 import QRCode from "react-qr-code";
-import { BsCheckCircleFill } from "react-icons/bs";
-import OperatorLayout from "../../layouts/OperatorLayout"; // The layout must be imported
-import { useTrip } from "../../context/TripContext"; 
+import { BsCheckCircleFill } from "react-icons/bs"; // Restored this import
+import OperatorLayout from "../../layouts/OperatorLayout";
+import { useTrip } from "../../context/TripContext"; // Restored this import
 import "../../styles/opdashboard.css";
 
 const Dashboard = () => {
   const [assignment, setAssignment] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [collectionAmount, setCollectionAmount] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState({ success: false, message: "" });
-  
-  // Get the shared state from the context. It's okay if this is unused for now.
-  const { completedStops } = useTrip();
-  
-  // Using an extended schedule to ensure the page is scrollable for testing
+  const [liveEarnings, setLiveEarnings] = useState(0);
+
+  // --- RESTORED: Getting trip state from context ---
+  const { completedStops, isTripActive } = useTrip();
+
+  // --- RESTORED: Schedule data for the tracker ---
   const schedule = [
     { time: "8:00 AM", location: "Start Point" },
     { time: "8:15 AM", location: "City Park" },
@@ -29,120 +29,117 @@ const Dashboard = () => {
     { time: "9:30 AM", location: "University Campus" },
     { time: "9:45 AM", location: "Hospital Junction" },
     { time: "10:00 AM", location: "Eastside Market" },
-    { time: "10:15 AM", location: "Riverfront Plaza" },
     { time: "10:30 AM", location: "Green Valley" },
-    { time: "10:45 AM", location: "Tech Park" },
     { time: "11:00 AM", location: "Airport Shuttle Stop" },
     { time: "11:15 AM", location: "Railway Station" },
     { time: "11:30 AM", location: "End Point" },
   ];
 
   useEffect(() => {
-    const fetchMyAssignment = async () => {
+    const fetchAssignment = async () => {
       setLoading(true);
       setError("");
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get("http://localhost:5000/api/assignments/my-assignment", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const headers = { Authorization: `Bearer ${token}` };
+        const res = await axios.get("http://localhost:5000/api/assignments/my-assignment", { headers });
         setAssignment(res.data);
       } catch (err) {
-        console.error("Assignment fetch error:", err);
         if (err.response?.status === 404) {
-            setError("You have not been assigned a vehicle yet. Please contact an administrator.");
+          console.log("Operator has no current assignment.");
+          setAssignment(null);
         } else {
-            setError("Could not fetch assignment details. The server might be down or the API endpoint is incorrect.");
+          console.error("Error fetching assignment:", err);
+          setError("Could not load dashboard data. Please try again later.");
         }
       } finally {
         setLoading(false);
       }
     };
-    fetchMyAssignment();
+    fetchAssignment();
   }, []);
 
-  const handleSubmitCollection = async (e) => {
-    e.preventDefault();
-    if (!collectionAmount || collectionAmount <= 0) {
-      setSubmitStatus({ success: false, message: "Please enter a valid amount." });
-      return;
+  useEffect(() => {
+    let intervalId = null;
+    // Only run earnings simulation when an assignment exists and a trip is active
+    if (assignment && isTripActive) {
+      intervalId = setInterval(() => {
+        setLiveEarnings(prevEarnings => {
+          // If we've already reached the cap, keep it capped
+          const CAP = 4000;
+          if (prevEarnings >= CAP) return CAP;
+          const newFare = Math.random() * (150 - 20) + 20;
+          const updated = prevEarnings + newFare;
+          return updated >= CAP ? CAP : updated;
+        });
+      }, 8000);
     }
-    setIsSubmitting(true);
-    try {
-      const token = localStorage.getItem("token");
-      await axios.post("http://localhost:5000/api/collections", 
-        { amount: collectionAmount, collectionDate: new Date().toISOString() },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setSubmitStatus({ success: true, message: "Collection submitted successfully!" });
-      setCollectionAmount("");
-    } catch (err) {
-      setSubmitStatus({ success: false, message: err.response?.data?.msg || "Submission failed." });
-    } finally {
-      setIsSubmitting(false);
+
+    return () => { if (intervalId) clearInterval(intervalId); };
+  }, [assignment, isTripActive]);
+
+  // Ensure live fare starts at ₹0 when a trip begins; keep cap enforced by the interval
+  useEffect(() => {
+    if (isTripActive && assignment) {
+      setLiveEarnings(0);
     }
-  };
+  }, [isTripActive, assignment]);
 
   const renderContent = () => {
     if (loading) {
-      return <div className="status-container"><Spinner animation="border" variant="primary" /><p className="mt-2">Loading...</p></div>;
+      return <div className="status-container"><Spinner animation="border" variant="primary" /><p className="mt-2">Loading Dashboard...</p></div>;
     }
+    
     if (error) {
-      return <div className="status-container"><Card className="shadow-sm p-4 text-center"><Card.Body className="error-text">{error}</Card.Body></Card></div>;
+       return <div className="status-container"><Alert variant="danger">{error}</Alert></div>
     }
-    // This condition checks if the assignment exists AND if the vehicle within it exists.
-    // This handles cases where an assignment might point to a deleted vehicle.
-    if (assignment && assignment.vehicle) {
-      return (
-        <>
-          <Card className="dashboard-card" style={{animationDelay: '100ms'}}>
-            <Card.Body>
-              <Card.Title>Assigned Vehicle</Card.Title>
+
+    return (
+      <>
+        {/* Card 1: Live Fare Collection */}
+        <Card className="dashboard-card" style={{ animationDelay: '100ms' }}>
+          <Card.Body>
+            <Card.Title>Live Fare Collection</Card.Title>
+            {assignment && assignment.vehicle ? (
               <div className="vehicle-details-grid">
                 <div className="vehicle-info">
-                    <p className="vehicle-id">{assignment.vehicle.vehicleId}</p>
-                    <p className="vehicle-model">{assignment.vehicle.model}</p>
+                  <p className="vehicle-id">{assignment.vehicle.vehicleId}</p>
+                  <p className="vehicle-model">
+                    Use this QR code for passenger payments.
+                  </p>
+                  <div className="collection-display mt-3">
+                    <span className="collection-time">Live Earnings (Simulated)</span>
+                    <span className="collection-amount text-success">
+                        ₹{liveEarnings.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
                 </div>
                 <div className="qr-code-container">
                   <div className="qr-code-wrapper">
                     <QRCode
-                      value={`https://your-app-domain.com/pay?vehicle=${assignment.vehicle._id}`}
+                      value={`/pay?vehicle=${assignment.vehicle._id}`}
                       size={128}
                       viewBox={`0 0 128 128`}
                     />
                   </div>
                 </div>
               </div>
-            </Card.Body>
-          </Card>
-          
-          <Card className="dashboard-card" style={{animationDelay: '200ms'}}>
-            <Card.Body>
-              <Card.Title>Submit Daily Collection</Card.Title>
-              <Form onSubmit={handleSubmitCollection}>
-                <Form.Group controlId="collectionAmount" className="mb-3">
-                  <Form.Label>Today's Total Revenue</Form.Label>
-                  <Form.Control 
-                    type="number"
-                    placeholder="Enter amount in ₹"
-                    value={collectionAmount}
-                    onChange={(e) => setCollectionAmount(e.target.value)}
-                    disabled={isSubmitting}
-                  />
-                </Form.Group>
-                <Button type="submit" className="btn-submit-modern" disabled={isSubmitting}>
-                  {isSubmitting ? <Spinner as="span" size="sm" /> : "Submit Collection"}
-                </Button>
-              </Form>
-              {submitStatus.message && (
-                <Alert variant={submitStatus.success ? 'success' : 'danger'} className="mt-3 text-center">
-                  {submitStatus.message}
-                </Alert>
-              )}
-            </Card.Body>
-          </Card>
+            ) : (
+              <div className="text-center p-3">
+                 <span className="material-icons" style={{fontSize: '48px', color: 'var(--op-text-secondary)'}}>no_transfer</span>
+                 <h5 className="mt-3">No Vehicle Assigned</h5>
+                 <p className="no-collection-msg">
+                   You cannot collect fares because you have not been assigned a vehicle. Please contact an administrator.
+                 </p>
+              </div>
+            )}
+          </Card.Body>
+        </Card>
 
-          <Card className="dashboard-card" style={{animationDelay: '300ms'}}>
+        {/* --- RESTORED: Schedule Tracker Card --- */}
+        {/* This card will only be displayed if an assignment exists */}
+        {assignment && (
+          <Card className="dashboard-card" style={{ animationDelay: '200ms' }}>
             <Card.Body>
               <Card.Title>Schedule Tracker</Card.Title>
               <div className="schedule-timeline">
@@ -160,23 +157,11 @@ const Dashboard = () => {
               </div>
             </Card.Body>
           </Card>
-        </>
-      );
-    }
-    // This case handles when the API call is successful but returns no assignment,
-    // or if the assignment's vehicle is null.
-    return (
-        <div className="status-container">
-          <Card className="shadow-sm p-4 text-center">
-            <Card.Body className="error-text">
-                Assignment details are missing or vehicle has been unassigned.
-            </Card.Body>
-          </Card>
-        </div>
+        )}
+      </>
     );
   };
 
-  // The main return now correctly wraps the content in the OperatorLayout
   return (
     <OperatorLayout>
       {renderContent()}

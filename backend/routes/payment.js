@@ -1,84 +1,128 @@
 import express from 'express';
 import authMiddleware from '../middleware/authMiddleware.js';
-// We no longer need the Mongoose models because this is a simulation
+import User from '../models/User.js'; // Import the REAL User model
+import Transaction from '../models/Transaction.js'; // Import the REAL Transaction model
 
 const router = express.Router();
 
-// --- SIMULATED IN-MEMORY "DATABASE" ---
-// In a real-world application, this data would be stored in and retrieved from MongoDB.
-// For this simulation, the data will reset every time the server restarts.
-
-let userBalance = 1250.75; // Starting balance for the user
-
-let paymentMethods = [
-  { id: 'sim_1', type: 'Credit Card', details: 'Visa **** 4567', icon: 'credit_card', color: '#ff9800' },
-  { id: 'sim_2', type: 'Debit Card', details: 'Mastercard **** 8901', icon: 'credit_card', color: '#1e88e5' },
-];
-
-let transactions = [
-  // Some initial dummy data for transaction history
-  { id: 'txn_123', amount: 50.00, description: 'Wallet Top-up', date: new Date(Date.now() - 86400000), status: 'Completed' },
-  { id: 'txn_124', amount: 25.00, description: 'Trip to Downtown', date: new Date(Date.now() - 172800000), status: 'Completed' },
-];
-// ----------------------------------------------------
+// The entire in-memory simulation has been REMOVED.
 
 // @route   GET api/payments/balance
-// @desc    Get the current user's wallet balance
-router.get('/balance', authMiddleware, (req, res) => {
-  // Simply return the current value of our simulated balance
-  res.json({ balance: userBalance });
-});
-
-// @route   GET api/payments/methods
-// @desc    Get all saved payment methods for the user
-router.get('/methods', authMiddleware, (req, res) => {
-  // Return the array of simulated payment methods
-  res.json(paymentMethods);
+// @desc    Get the current user's wallet balance from the database
+router.get('/balance', authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('walletBalance'); // More efficient
+    if (!user) {
+      return res.status(404).json({ msg: 'User not found' });
+    }
+    res.json({ balance: user.walletBalance });
+  } catch (err) {
+    console.error('Error fetching balance:', err.message);
+    res.status(500).send('Server Error');
+  }
 });
 
 // @route   POST api/payments/charge
-// @desc    "Charge" the user for a trip by deducting from their wallet balance
-router.post('/charge', authMiddleware, (req, res) => {
+// @desc    Charge the user for a trip by deducting from their database wallet balance
+router.post('/charge', authMiddleware, async (req, res) => {
   const { amount, description } = req.body;
+  const numericAmount = parseFloat(amount);
 
-  // Basic validation
-  if (!amount || amount <= 0) {
-    return res.status(400).json({ msg: 'A valid amount is required.' });
+  if (isNaN(numericAmount) || numericAmount <= 0) {
+    return res.status(400).json({ msg: 'A valid, positive amount is required.' });
   }
   
-  // Check if the user has enough money in their wallet
-  if (userBalance < amount) {
-    return res.status(400).json({ msg: 'Insufficient balance. Please top-up your wallet.' });
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ msg: 'User not found' });
+    }
+    
+    if (user.walletBalance < numericAmount) {
+      return res.status(400).json({ msg: 'Insufficient balance. Please top-up your wallet.' });
+    }
+
+    // Update user's balance in the database
+    user.walletBalance -= numericAmount;
+    await user.save();
+
+    // Create a new permanent transaction record
+    const newTransaction = new Transaction({
+      user: req.user.id,
+      amount: -numericAmount, // Debits are negative
+      description: description || 'Trip Payment',
+      status: 'succeeded',
+    });
+    await newTransaction.save();
+
+    res.json({ 
+      success: true, 
+      newBalance: user.walletBalance, 
+      newTransaction,
+      message: 'Payment successful!' 
+    });
+  } catch (err) {
+    console.error('Error processing charge:', err.message);
+    res.status(500).send('Server Error');
   }
-
-  // If sufficient, deduct the amount from the balance
-  userBalance -= amount;
-
-  // Create a new transaction record for the history
-  const newTransaction = {
-    id: `txn_${Date.now()}`,
-    amount,
-    description: description || 'Trip Payment',
-    date: new Date(),
-    status: 'Completed'
-  };
-  // Add the new transaction to the beginning of the history array
-  transactions.unshift(newTransaction);
-
-  // Send a success response with the updated balance and the new transaction
-  res.json({ 
-    success: true, 
-    newBalance: userBalance, 
-    newTransaction,
-    message: 'Payment successful!' 
-  });
 });
+
+// @route   POST api/payments/add-money
+// @desc    Add money to the user's wallet balance in the database
+router.post('/add-money', authMiddleware, async (req, res) => {
+    const { amount } = req.body;
+    const numericAmount = parseFloat(amount);
+
+    if (isNaN(numericAmount) || numericAmount <= 0) {
+        return res.status(400).json({ msg: 'A valid, positive amount is required to top-up.' });
+    }
+
+    try {
+      const user = await User.findById(req.user.id);
+      if (!user) {
+        return res.status(404).json({ msg: 'User not found' });
+      }
+
+      // Update user's balance in the database
+      user.walletBalance += numericAmount;
+      await user.save();
+
+      // Create a new permanent transaction record
+      const newTransaction = new Transaction({
+        user: req.user.id,
+        amount: numericAmount, // Credits are positive
+        description: 'Wallet Top-up',
+        status: 'succeeded',
+      });
+      await newTransaction.save();
+
+      res.json({
+          success: true,
+          newBalance: user.walletBalance,
+          newTransaction,
+          message: 'Money added to wallet successfully!'
+      });
+    } catch (err) {
+      console.error('Error adding money:', err.message);
+      res.status(500).send('Server Error');
+    }
+});
+
 
 // @route   GET api/payments/transactions
-// @desc    Get the user's transaction history
-router.get('/transactions', authMiddleware, (req, res) => {
-  // Return the array of simulated transactions
-  res.json(transactions);
+// @desc    Get the user's transaction history from the database
+router.get('/transactions', authMiddleware, async (req, res) => {
+  try {
+    const transactions = await Transaction.find({ user: req.user.id }).sort({ createdAt: -1 }).limit(20);
+    res.json(transactions);
+  } catch (err) {
+    console.error('Error fetching transactions:', err.message);
+    res.status(500).send('Server Error');
+  }
 });
+
+// This route was part of the simulation and is no longer needed for basic wallet functionality.
+// A real payment method implementation would require a service like Stripe or Razorpay.
+// router.get('/methods', authMiddleware, (req, res) => { ... });
 
 export default router;

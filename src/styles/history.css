@@ -1,88 +1,94 @@
-/* --- Passenger History Page --- */
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+/* --- Modern Passenger History Page CSS (2025 Style) --- */
 
-:root {
-  --primary-blue: #1d4ed8;
-  --passenger-bg: #f8fafc;
-  --card-bg: #ffffff;
-  --text-dark: #0f172a;
-  --text-light: #64748b;
-  --border-color: #e2e8f0;
-  --status-pending-bg: #fffbe6;
-  --status-pending-text: #d48806;
-  --status-resolved-bg: #f6ffed;
-  --status-resolved-text: #52c41a;
+/* --- 1. Root Variables & Dark Mode --- */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+:root { 
+  --passenger-primary: #007aff; 
+  --passenger-background: #f2f2f7; 
+  --passenger-card-bg: #ffffff; 
+  --passenger-text-primary: #1d1d1f; 
+  --passenger-text-secondary: #6e6e73; 
+  --passenger-border-color: #e5e5ea; 
+  --passenger-input-bg: #f2f2f7; 
 }
-.history-page {
-  background-color: var(--passenger-bg);
-  min-height: 100vh;
-  font-family: 'Roboto', sans-serif;
-  display: flex;
-  flex-direction: column;
-  padding-bottom: 70px;
+@media (prefers-color-scheme: dark) { 
+  :root { 
+    --passenger-background: #000000; 
+    --passenger-card-bg: #1c1c1e; 
+    --passenger-text-primary: #f5f5f7; 
+    --passenger-text-secondary: #8d8d92; 
+    --passenger-border-color: #38383a; 
+    --passenger-input-bg: #2c2c2e; 
+  } 
 }
 
-/* Header and Nav styles are assumed to be consistent */
+/* --- 2. Base Layout --- */
+.history-page, .history-main {
+  width: 100%;
+  box-sizing: border-box;
+}
 
-/* Main Content */
-.history-main {
-  flex-grow: 1;
-  overflow-y: auto;
-  padding: 1.5rem;
+/* --- 3. NEW: Integrated Header Section --- */
+.history-header {
+  margin-bottom: 2rem;
 }
 .page-title {
-  font-size: 1.875rem; /* text-3xl */
+  font-size: 1.8rem;
   font-weight: 700;
-  color: var(--text-dark);
+  color: var(--passenger-text-primary);
+  margin-bottom: 0.25rem;
+  text-align: center;
 }
 .page-subtitle {
-  margin-top: 0.25rem;
-  color: var(--text-light);
+  font-size: 1rem;
+  color: var(--passenger-text-secondary);
+  text-align: center;
+  margin-bottom: 1.5rem;
 }
 
-/* Search Bar */
-.search-container {
-  margin-top: 1.5rem;
-}
+/* --- 4. Upgraded Search Bar --- */
 .search-wrapper {
   position: relative;
+  max-width: 500px;
+  margin: 0 auto;
 }
 .search-wrapper .material-icons {
-  pointer-events: none;
   position: absolute;
-  top: 0; bottom: 0; left: 0;
-  display: flex;
-  align-items: center;
-  padding-left: 0.75rem;
-  color: var(--text-light);
+  top: 50%;
+  left: 1rem;
+  transform: translateY(-50%);
+  color: var(--passenger-text-secondary);
+  pointer-events: none;
 }
 .search-wrapper input {
   display: block;
   width: 100%;
-  border-radius: 0.5rem;
-  border: 0;
-  padding: 0.75rem 0.75rem 0.75rem 2.5rem; /* py-3 pl-10 */
-  color: var(--text-dark);
-  background-color: #f1f5f9; /* bg-gray-100 */
+  border-radius: 12px;
+  border: 1px solid var(--passenger-border-color);
+  padding: 0.75rem 1rem 0.75rem 3rem;
+  font-size: 1rem;
+  color: var(--passenger-text-primary);
+  background-color: var(--passenger-card-bg);
+  transition: all 0.2s ease;
 }
 .search-wrapper input:focus {
-  outline: 2px solid var(--primary-blue);
-  outline-offset: 2px;
+  outline: none;
+  border-color: var(--passenger-primary);
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
 }
 
-/* Content Area */
+/* --- 5. Content Area & Trip List --- */
 .history-content {
-  margin-top: 2rem;
+  padding: 0 1rem;
 }
 .section-title {
-  font-size: 1.25rem; /* text-xl */
+  font-size: 1.3rem;
   font-weight: 600;
-  color: var(--text-dark);
+  color: var(--passenger-text-primary);
+  margin-bottom: 1.25rem;
 }
 
-/* Trip List */
 .trip-list {
-  margin-top: 1rem;
   display: grid;
   gap: 1rem;
 }
@@ -90,15 +96,16 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  background-color: var(--card-bg);
-  padding: 1rem;
-  border-radius: 0.5rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  background-color: var(--passenger-card-bg);
+  padding: 1.25rem;
+  border-radius: 1rem;
+  border: 1px solid var(--passenger-border-color);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.06);
 }
 .trip-card-icon {
-  background-color: #e0e7ff; /* light blue */
-  color: var(--primary-blue);
-  width: 40px; height: 40px;
+  background-color: rgba(0, 122, 255, 0.15);
+  color: var(--passenger-primary);
+  width: 44px; height: 44px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -109,105 +116,58 @@
   flex-grow: 1;
 }
 .trip-card-details h4 {
-  font-weight: 500;
-  color: var(--text-dark);
-  margin: 0;
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--passenger-text-primary);
+  margin: 0 0 0.1rem 0;
 }
 .trip-card-details p {
-  font-size: 0.875rem; /* text-sm */
-  color: var(--text-light);
+  font-size: 0.85rem;
+  color: var(--passenger-text-secondary);
   margin: 0;
 }
 .trip-card-fare {
   font-weight: 700;
-  font-size: 1.125rem; /* text-lg */
-  color: var(--text-dark);
+  font-size: 1.125rem;
+  color: var(--passenger-text-primary);
 }
 
-/* --- NEW: Styles for the Report History section --- */
-.report-history-list {
-  margin-top: 1rem;
-  display: grid;
-  gap: 1rem;
+/* --- 6. Dynamic States (Loading, Empty, Error) --- */
+.status-indicator, .empty-state {
+  text-align: center;
+  padding: 2.5rem;
+  border-radius: 1rem;
+  margin-top: 1.5rem;
 }
-.report-history-card {
-  background: var(--card-bg);
-  border-radius: 8px;
-  padding: 1rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-  font-size: 0.9rem;
+.status-indicator {
+  color: var(--passenger-text-secondary);
 }
-.report-history-card .report-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.75rem;
-  color: var(--text-light);
+.status-indicator.error {
+  background-color: rgba(255, 69, 58, 0.15);
+  color: #ff453a;
+  font-weight: 500;
 }
-.status-pill {
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 0.25rem 0.75rem;
-  border-radius: 99px;
-  text-transform: uppercase;
-}
-.status-pill.pending {
-  background-color: var(--status-pending-bg);
-  color: var(--status-pending-text);
-}
-.status-pill.resolved {
-  background-color: var(--status-resolved-bg);
-  color: var(--status-resolved-text);
-}
-.report-history-card p {
-  margin: 0 0 0.5rem 0;
-}
-.admin-reply {
-  border-top: 1px solid var(--border-color);
-  margin-top: 1rem;
-  padding-top: 1rem;
-  background-color: #f8fafc;
-  padding: 1rem;
-  border-radius: 8px;
-}
-.admin-reply p {
-  margin: 0;
-  color: var(--text-light);
-}
-.admin-reply strong {
-  color: var(--text-dark);
-}
-
-
-/* Empty State */
 .empty-state {
-  margin-top: 1rem;
+  background-color: var(--passenger-card-bg);
+  border: 1px dashed var(--passenger-border-color);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  text-align: center;
-  padding: 4rem 0;
-  color: var(--text-light);
 }
 .empty-state .material-icons {
-  font-size: 3.75rem; /* text-6xl */
-  opacity: 0.5;
+  font-size: 2.5rem;
+  color: var(--passenger-text-secondary);
+  opacity: 0.7;
 }
 .empty-title {
   margin-top: 1rem;
-  font-size: 1.125rem; /* text-lg */
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--passenger-text-primary);
 }
 .empty-subtitle {
   margin-top: 0.25rem;
-}
-
-/* Loading/Error */
-.status-indicator {
-  text-align: center;
-  padding: 2rem;
-  color: var(--text-light);
-}
-.status-indicator.error {
-  color: #dc3545;
+  font-size: 0.9rem;
+  color: var(--passenger-text-secondary);
 }

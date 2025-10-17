@@ -8,7 +8,7 @@ const TripSchema = new mongoose.Schema({
   },
   origin: {
     type: String,
-    required: true,
+    // required: true, // --- THIS IS THE FIX: The field is now optional ---
   },
   destination: {
     type: String,

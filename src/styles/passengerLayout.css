@@ -25,25 +25,49 @@
   }
 }
 
-/* --- 2. Base Layout Shell --- */
+/* --- 2. Base Layout Shell (FIXED) --- */
 .passenger-layout {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh; /* Use height, not min-height */
   background-color: var(--passenger-background);
   font-family: 'Poppins', sans-serif;
-  /* Add padding to prevent content from being hidden by fixed nav/header */
-  padding-top: 5.5rem; 
-  padding-bottom: 5.5rem;
+  /* Make the entire app container scrollable so the scrollbar sits at the viewport edge */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  /* Styled scrollbar (WebKit) */
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: rgba(30,136,229,0.75) rgba(0,0,0,0.06);
 }
 
-/* --- 3. Main Content Area --- */
-.passenger-main {
+/* WebKit scrollbar styling for the overall app container */
+.passenger-layout::-webkit-scrollbar {
+  width: 12px;
+}
+.passenger-layout::-webkit-scrollbar-track {
+  background: transparent;
+}
+.passenger-layout::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(30,136,229,0.95), rgba(30,136,229,0.6));
+  border-radius: 999px;
+  border: 3px solid transparent; /* creates padding around thumb */
+  background-clip: padding-box;
+}
+.passenger-layout::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, rgba(30,136,229,1), rgba(30,136,229,0.8)); }
+
+/* --- 3. Main Content Area (NOW SCROLLABLE) --- */
+.passenger-main-scrollable {
   flex-grow: 1; /* Allows the main content to fill available space */
+  /* Scrolling is handled by the outer .passenger-layout so ensure this area doesn't create nested scrollbars */
+  overflow: visible;
   padding: 1rem;
   width: 100%;
   max-width: 768px; /* Max width for content on larger screens */
   margin: 0 auto;
+  
+  /* Add padding to prevent content from being hidden by fixed nav/header */
+  padding-top: 5.5rem; 
+  padding-bottom: 5.5rem;
 }
 
 /* --- 4. FLOATING Header (Glassmorphism) --- */

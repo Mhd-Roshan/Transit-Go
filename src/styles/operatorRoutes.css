@@ -69,9 +69,15 @@
 /* --- This class controls the size of the interactive map --- */
 .leaflet-container {
   height: 250px; /* You can adjust this value (e.g., 200px, 300px) */
+  min-height: 200px; /* ensure some visible area in tight layouts */
   width: 100%;
+  display: block !important; /* avoid flex collapse or inline issues */
+  position: relative !important; /* ensure positioned for leaflet panes */
   z-index: 1; /* Ensures map is interactable */
 }
+
+/* Ensure parent card doesn't collapse when inside flex containers */
+.map-card { display: block; }
 
 .route-info {
   display: flex;

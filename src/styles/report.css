@@ -1,169 +1,168 @@
-/* --- Creative Passenger Report Page --- */
+/* --- Modern Passenger Report Page CSS (2025 Style - Split Layout) --- */
+
+/* --- 1. Root Variables & Dark Mode (Synced) --- */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
-
-:root {
-  --creative-bg: linear-gradient(180deg, #e3f2fd 0%, #f4f5f9 40%);
-  --creative-blue: #1e88e5;
-  --accent-orange: #ff9800;
-  --card-bg: rgba(255, 255, 255, 0.95);
-  --text-dark: #263238;
-  --text-light: #78909c;
-  --border-color: #e0e0e0;
-  --soft-shadow: 0 10px S30px rgba(0, 0, 0, 0.08);
+:root { 
+  --passenger-primary: #007aff; 
+  --passenger-background: #f2f2f7; 
+  --passenger-card-bg: #ffffff; 
+  --passenger-text-primary: #1d1d1f; 
+  --passenger-text-secondary: #6e6e73; 
+  --passenger-border-color: #e5e5ea; 
+  --passenger-input-bg: #f2f2f7;
+  --status-pending-bg: rgba(255, 159, 10, 0.15);
+  --status-pending-text: #ff9f0a;
+  --status-resolved-bg: rgba(48, 209, 88, 0.15);
+  --status-resolved-text: #30d158;
+}
+@media (prefers-color-scheme: dark) { 
+  :root { 
+    --passenger-background: #000000; 
+    --passenger-card-bg: #1c1c1e; 
+    --passenger-text-primary: #f5f5f7; 
+    --passenger-text-secondary: #8d8d92; 
+    --passenger-border-color: #38383a; 
+    --passenger-input-bg: #2c2c2e;
+    --status-pending-bg: rgba(255, 159, 10, 0.2);
+    --status-resolved-bg: rgba(48, 209, 88, 0.2);
+  } 
 }
 
+/* --- 2. Base Page Layout & Header --- */
 .report-page {
-  background: var(--creative-bg);
-  min-height: 100vh;
-  font-family: 'Poppins', sans-serif;
-  padding-bottom: 70px;
+  /* No styles needed, handled by parent layout */
 }
-
-/* Main Content & Form Card */
-.report-main {
-  padding: 1rem;
-}
-@media (min-width: 768px) {
-  .report-main {
-    max-width: 600px;
-    margin: 2rem auto;
-  }
-}
-
-.report-card {
-  background: var(--card-bg);
-  backdrop-filter: blur(10px);
-  border-radius: 20px;
-  padding: 1.5rem;
-  box-shadow: var(--soft-shadow);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-}
-@media (min-width: 768px) {
-  .report-card {
-    padding: 2.5rem;
-  }
-}
-
-.form-title {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: var(--text-dark);
+.report-header {
+  text-align: center;
   margin-bottom: 2rem;
-  text-align: center;
 }
-
-.form-group {
-  margin-bottom: 1.5rem;
+.page-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--passenger-text-primary);
 }
-.form-group label {
-  display: block;
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--text-dark);
-  margin-bottom: 0.5rem;
-}
-
-.form-group input,
-.form-group select,
-.form-group textarea {
-  display: block;
-  width: 100%;
-  border-radius: 12px;
-  border: 1px solid var(--border-color);
-  padding: 0.9rem 1rem;
-  color: var(--text-dark);
-  background-color: #f5f5f5;
-  transition: all 0.2s ease;
-  font-family: 'Poppins', sans-serif;
+.page-subtitle {
   font-size: 1rem;
+  color: var(--passenger-text-secondary);
 }
 
-.form-group input::placeholder,
-.form-group textarea::placeholder {
-  color: #a0a0a0;
+/* --- 3. NEW: Two-Column Grid Layout --- */
+.report-main-grid {
+  display: grid;
+  grid-template-columns: 1fr; /* Default to single column */
+  gap: 2.5rem;
+}
+/* On screens wider than 992px, switch to two columns */
+@media (min-width: 992px) {
+  .report-main-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
-  outline: none;
-  border-color: var(--creative-blue);
-  box-shadow: 0 0 0 4px rgba(30, 136, 229, 0.1);
-  background-color: var(--card-bg);
-}
-
-.form-group textarea {
-  resize: vertical;
-  min-height: 120px;
-}
-
-/* File Upload Box */
-.file-upload-box {
-  border: 2px dashed var(--border-color);
-  border-radius: 12px;
+/* --- 4. Report Submission Form (Left Column) --- */
+.report-card {
+  background: var(--passenger-card-bg);
+  border-radius: 1.25rem;
   padding: 1.5rem;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.07);
+  border: 1px solid var(--passenger-border-color);
 }
-.file-upload-box:hover {
-  border-color: var(--creative-blue);
-  background-color: #eff6ff;
-}
-.file-input {
-  display: none;
-}
-.file-label {
-  color: var(--creative-blue);
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  cursor: pointer;
-}
-
-/* Submit Button */
-.submit-btn {
-  width: 100%;
-  background: linear-gradient(45deg, var(--creative-blue), #42a5f5);
-  color: #fff;
-  border: none;
-  border-radius: 12px;
-  padding: 0.9rem;
-  font-size: 1.1rem;
+.form-title {
+  font-size: 1.3rem;
   font-weight: 600;
-  cursor: pointer;
-  margin-top: 1rem;
-  box-shadow: 0 4px 15px rgba(30, 136, 229, 0.3);
+  color: var(--passenger-text-primary);
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--passenger-border-color);
+}
+.form-group { margin-bottom: 1.25rem; }
+.form-group label {
+  display: block; font-size: 0.9rem; font-weight: 500;
+  color: var(--passenger-text-primary); margin-bottom: 0.5rem;
+}
+.form-group input, .form-group select, .form-group textarea {
+  display: block; width: 100%; border-radius: 12px;
+  border: 1px solid var(--passenger-border-color); padding: 0.9rem 1rem;
+  color: var(--passenger-text-primary); background-color: var(--passenger-input-bg);
+  transition: all 0.2s ease; font-family: 'Poppins', sans-serif; font-size: 1rem;
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+  outline: none; border-color: var(--passenger-primary);
+  box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.15);
+  background-color: var(--passenger-card-bg);
+}
+.form-group textarea { resize: vertical; min-height: 120px; }
+
+.submit-btn {
+  width: 100%; background: var(--passenger-primary); color: #fff; border: none;
+  border-radius: 12px; padding: 0.9rem; font-size: 1rem; font-weight: 600;
+  cursor: pointer; margin-top: 0.5rem; box-shadow: 0 4px 15px rgba(0, 122, 255, 0.2);
   transition: all 0.3s ease;
 }
-.submit-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(30, 136, 229, 0.4);
+.submit-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 122, 255, 0.3); }
+.submit-btn:disabled { background: var(--passenger-text-secondary); box-shadow: none; cursor: not-allowed; }
+
+/* --- 5. Report History (Right Column) --- */
+.section-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--passenger-text-primary);
+  margin-bottom: 1.5rem;
 }
-.submit-btn:disabled {
-  background: #bdbdbd;
-  box-shadow: none;
-  cursor: not-allowed;
+.report-history-list { display: grid; gap: 1.25rem; }
+.report-history-card {
+  background: var(--passenger-card-bg);
+  border-radius: 1rem;
+  border: 1px solid var(--passenger-border-color);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+}
+.report-history-card .card-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0.75rem 1rem; border-bottom: 1px solid var(--passenger-border-color);
+  font-size: 0.85rem;
+}
+.report-history-card .card-body {
+  padding: 1rem;
+  font-size: 0.9rem;
+}
+.status-pill {
+  font-size: 0.7rem; font-weight: 600; padding: 0.2rem 0.6rem;
+  border-radius: 99px; text-transform: uppercase;
+}
+.status-pill.pending { background-color: var(--status-pending-bg); color: var(--status-pending-text); }
+.status-pill.resolved { background-color: var(--status-resolved-bg); color: var(--status-resolved-text); }
+
+.card-body p { margin: 0 0 0.5rem 0; color: var(--passenger-text-secondary); }
+.card-body p strong { color: var(--passenger-text-primary); }
+
+.admin-reply {
+  border-top: 1px solid var(--passenger-border-color);
+  margin-top: 1rem; padding-top: 1rem;
+}
+.admin-reply p {
+  background-color: var(--passenger-input-bg);
+  padding: 0.75rem 1rem;
+  border-radius: 8px; margin: 0;
 }
 
-/* Alert styling for success/error messages */
-.alert {
-  padding: 1rem;
-  margin-top: 1.5rem;
-  border-radius: 12px;
-  font-weight: 500;
+/* --- 6. Dynamic States --- */
+.empty-state {
+  background-color: var(--passenger-card-bg);
+  border: 1px dashed var(--passenger-border-color);
+  border-radius: 1.25rem;
+  padding: 3rem 1rem;
   text-align: center;
-  border: 1px solid transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
-.alert-success {
-  background-color: #e8f5e9;
-  color: #2e7d32;
-  border-color: #a5d6a7;
+.empty-state .material-icons {
+  font-size: 2.5rem; color: var(--passenger-text-secondary); opacity: 0.7;
 }
-.alert-danger {
-  background-color: #ffebf0;
-  color: #c62828;
-  border-color: #ef9a9a;
+.empty-state h5 {
+  margin: 1rem 0 0.25rem 0; font-weight: 600; color: var(--passenger-text-primary);
+}
+.empty-state p {
+  color: var(--passenger-text-secondary); margin: 0;
 }

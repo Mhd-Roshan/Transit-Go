@@ -5,17 +5,17 @@
 @import url('https://fonts.googleapis.com/icon?family=Material+Icons+Outlined');
 
 :root {
-  --passenger-primary: #1e88e5;
-  --passenger-secondary: #ff9800;
-  --passenger-background: #f4f5f9;
+  --passenger-primary: #007aff;
+  --passenger-secondary: #ff9f0a;
+  --passenger-background: #f2f2f7;
   --passenger-card-bg: #ffffff;
-  --passenger-text-primary: #263238;
-  --passenger-text-secondary: #78909c;
-  --passenger-border-color: #e0e0e0;
-  --passenger-input-bg: #ffffff;
-  --passenger-hover-bg: rgba(0,0,0,0.04);
-  --status-green: #198754; --status-red: #dc3545; --status-blue: #0d6efd;
-  --status-green-bg: #d1e7dd; --status-red-bg: #f8d7da; --status-blue-bg: #cfe2ff;
+  --passenger-text-primary: #1d1d1f;
+  --passenger-text-secondary: #6e6e73;
+  --passenger-border-color: #e5e5ea;
+  --passenger-input-bg: #f2f2f7;
+  --passenger-hover-bg: rgba(0, 0, 0, 0.05);
+  --status-green: #30d158; --status-red: #ff453a; --status-blue: #0a84ff;
+  --status-green-bg: rgba(48, 209, 88, 0.15); --status-red-bg: rgba(255, 69, 58, 0.15); --status-blue-bg: rgba(10, 132, 255, 0.15);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -26,8 +26,8 @@
     --passenger-text-secondary: #8d8d92;
     --passenger-border-color: #38383a;
     --passenger-input-bg: #2c2c2e;
-    --passenger-hover-bg: rgba(255,255,255,0.08);
-    --status-green-bg: rgba(25, 135, 84, 0.2); --status-red-bg: rgba(220, 53, 69, 0.2); --status-blue-bg: rgba(13, 110, 253, 0.2);
+    --passenger-hover-bg: rgba(255, 255, 255, 0.08);
+    --status-green-bg: rgba(48, 209, 88, 0.2); --status-red-bg: rgba(255, 69, 58, 0.2); --status-blue-bg: rgba(10, 132, 255, 0.2);
   }
 }
 
@@ -40,137 +40,169 @@
   opacity: 0;
   animation: fade-in 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
-.passenger-home-page {
-  /* This is the main container for all content on the home page */
-}
 
-/* --- 3. NEW: Greeting Banner --- */
+/* --- 3. Greeting Banner & Section Titles --- */
 .greeting-banner {
-  padding: 1rem 1.25rem;
-  margin-bottom: 1.5rem;
+  padding: 0;
+  margin-bottom: 1.75rem; /* Reduced Gap */
 }
 .greeting-text h2 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   font-weight: 700;
   color: var(--passenger-text-primary);
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
 }
 .greeting-text p {
   margin: 0.25rem 0 0;
   color: var(--passenger-text-secondary);
-  font-size: 0.95rem;
+  font-size: 1rem;
+}
+.section-title {
+  font-size: 1.3rem; /* Slightly smaller */
+  font-weight: 600;
+  color: var(--passenger-text-primary);
+  margin-bottom: 1rem;
 }
 
 /* --- 4. Refined Balance Card --- */
 .balance-overview-section {
-  margin-bottom: 2rem;
+  margin-bottom: 1.75rem; /* Reduced Gap */
 }
 .balance-card {
-  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+  background: linear-gradient(135deg, var(--passenger-primary) 0%, #5856d6 100%);
   color: #fff;
-  border-radius: 20px;
-  padding: 1.25rem 1.5rem;
-  box-shadow: 0 10px 30px rgba(30, 60, 114, 0.4);
+  border-radius: 24px;
+  padding: 1.5rem;
+  box-shadow: 0 12px 35px rgba(0, 122, 255, 0.25);
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 .balance-label { font-size: 0.9rem; opacity: 0.8; }
 .balance-amount { font-size: 2.2rem; font-weight: 700; margin: 0; line-height: 1.2; }
-.balance-info .text-muted { font-size: 0.75rem; color: rgba(255,255,255,0.6) !important; display: block; margin-top: 4px; }
-.btn-add-money { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: #fff; border-radius: 50px; padding: 0.5rem 1rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; cursor: pointer; transition: background-color 0.2s; }
-.btn-add-money:hover { background: rgba(255,255,255,0.25); }
+.btn-add-money { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: #fff; border-radius: 50px; padding: 0.6rem 1.1rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; cursor: pointer; transition: all 0.2s ease; }
+.btn-add-money:hover { background: rgba(255,255,255,0.25); transform: scale(1.05); }
 
-/* --- 5. Refined Fare Search & Section Titles --- */
-.section-title {
-  font-size: 1.4rem;
-  font-weight: 700;
-  color: var(--passenger-text-primary);
-  margin-bottom: 1.25rem;
+
+/* --- 5. Trip Starter Card (Tabs) --- */
+.trip-starter-section {
+  margin-bottom: 1.75rem; /* Reduced Gap */
 }
-.fare-search-card {
+.trip-starter-card {
   background: var(--passenger-card-bg);
   border-radius: 1.25rem;
-  padding: 1.5rem;
-  text-align: left;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.07);
+  padding: 0.5rem 0.5rem 1.5rem 0.5rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.07);
   border: 1px solid var(--passenger-border-color);
 }
-.input-group-creative {
-  display: flex; align-items: center; gap: 0.75rem;
-  background-color: var(--passenger-input-bg);
-  border: 1px solid var(--passenger-border-color);
-  border-radius: 12px;
-  padding: 0.85rem;
-}
-.input-group-creative:focus-within { border-color: var(--passenger-primary); box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.1); }
-.input-group-creative .material-icons { color: var(--passenger-text-secondary); }
-.input-group-creative input { border: none; outline: none; width: 100%; font-size: 1rem; background: none; font-weight: 500; color: var(--passenger-text-primary); }
-.btn-fare { width: 100%; background: var(--passenger-primary); color: #fff; border: none; border-radius: 12px; padding: 0.9rem; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; margin-top: 1rem; }
-.btn-fare:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(30, 136, 229, 0.3); }
-.hero-section { margin-bottom: 2.5rem; }
-
-/* --- 6. NEW: Destination Chips --- */
-.destination-chips {
+.tab-nav {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 1rem;
+  border-bottom: 1px solid var(--passenger-border-color);
+  margin-bottom: 1.5rem;
 }
-.chip {
-  border: 1px solid var(--passenger-border-color);
-  background: var(--passenger-card-bg);
-  color: var(--passenger-text-primary);
-  padding: 0.4rem 0.8rem;
-  border-radius: 99px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  transition: background-color 0.2s;
+.tab-btn {
+  flex: 1; background: transparent; border: none; padding: 0.75rem; font-size: 0.9rem;
+  font-weight: 500; color: var(--passenger-text-secondary); cursor: pointer; display: flex;
+  align-items: center; justify-content: center; gap: 0.5rem; border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
 }
-.chip.recent { background: var(--passenger-hover-bg); color: var(--passenger-text-secondary); }
-.chip.recent .material-icons { font-size: 1rem; }
-.chip:hover { background: var(--passenger-hover-bg); border-color: var(--passenger-text-secondary); }
+.tab-btn.active {
+  color: var(--passenger-primary); font-weight: 600; border-bottom-color: var(--passenger-primary);
+}
+.tab-content { padding: 0 1rem; }
+.input-group-creative {
+  display: flex; align-items: center; gap: 0.75rem; background-color: var(--passenger-input-bg);
+  border: 1px solid var(--passenger-border-color); border-radius: 12px; padding: 0.85rem;
+}
+.input-group-creative:focus-within { border-color: var(--passenger-primary); box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.15); }
+.input-group-creative .material-icons-outlined { color: var(--passenger-text-secondary); }
+.input-group-creative input { border: none; outline: none; width: 100%; font-size: 1rem; background: none; font-weight: 500; color: var(--passenger-text-primary); }
+.btn-fare { width: 100%; background: var(--passenger-primary); color: #fff; border: none; border-radius: 12px; padding: 0.9rem; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; margin-top: 1.25rem; }
+.btn-fare:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 122, 255, 0.3); }
 
+/* Scan Tab Content */
+.scan-tab-content { display: flex; flex-direction: column; align-items: center; text-align: center; }
+.scan-tab-icon { font-size: 64px; color: var(--passenger-primary); margin-bottom: 1rem; }
+.scan-tab-content h4 { font-size: 1.2rem; font-weight: 600; color: var(--passenger-text-primary); margin: 0 0 0.5rem 0; }
+.scan-tab-content p { color: var(--passenger-text-secondary); font-size: 0.9rem; max-width: 300px; margin: 0; }
+
+/* --- 6. Destination Chips --- */
+.destination-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
+.chip {
+  border: 1px solid transparent; background: var(--passenger-input-bg); color: var(--passenger-text-primary);
+  padding: 0.4rem 0.8rem; border-radius: 99px; font-size: 0.8rem; font-weight: 500; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 0.35rem; transition: all 0.2s ease;
+}
+.chip.recent { color: var(--passenger-text-secondary); }
+.chip:hover { transform: translateY(-2px); background: var(--passenger-hover-bg); color: var(--passenger-primary); }
+.chip.recent .material-icons-outlined { font-size: 1rem; }
 
 /* --- 7. Refined Upcoming Buses --- */
-.upcoming-buses-section { margin-bottom: 2.5rem; }
+.upcoming-buses-section { margin-bottom: 1.75rem; }
 .bus-list { display: grid; gap: 1rem; }
-.bus-card { display: flex; justify-content: space-between; align-items: center; background-color: var(--passenger-card-bg); border-radius: 1rem; padding: 1.25rem; box-shadow: 0 4px 15px rgba(0,0,0,0.06); border: 1px solid var(--passenger-border-color); }
-.bus-card-details h4 { font-size: 1rem; font-weight: 600; margin: 0 0 0.25rem 0; color: var(--passenger-text-primary); }
+.bus-card {
+  display: flex; align-items: center; gap: 1rem; background-color: var(--passenger-card-bg);
+  border-radius: 1rem; padding: 1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+  border: 1px solid var(--passenger-border-color);
+}
+.bus-card-icon {
+  width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center;
+  justify-content: center; color: var(--passenger-primary); background-color: var(--status-blue-bg);
+  flex-shrink: 0;
+}
+.bus-card-details { flex-grow: 1; }
+.bus-card-details h4 { font-size: 1rem; font-weight: 600; margin: 0 0 0.1rem 0; color: var(--passenger-text-primary); }
 .bus-card-details p { margin: 0; color: var(--passenger-text-secondary); font-size: 0.9rem; }
-.bus-card-details strong { color: var(--passenger-text-primary); }
 .bus-card-timing { text-align: right; }
 .departs-in { display: block; font-size: 0.9rem; font-weight: 600; color: var(--passenger-primary); margin-bottom: 0.25rem; }
 .status-badge { font-size: 0.75rem; font-weight: 600; padding: 0.3rem 0.75rem; border-radius: 99px; }
 .status-badge.on-time { color: var(--status-green); background-color: var(--status-green-bg); }
 .status-badge.delayed { color: var(--status-red); background-color: var(--status-red-bg); }
 .status-badge.scheduled { color: var(--status-blue); background-color: var(--status-blue-bg); }
-.no-buses-msg { color: var(--passenger-text-secondary); text-align: center; padding: 1.5rem; background-color: var(--passenger-card-bg); border-radius: 1rem; border: 1px dashed var(--passenger-border-color); }
+.no-buses-msg { color: var(--passenger-text-secondary); text-align: center; padding: 2rem; background-color: var(--passenger-card-bg); border-radius: 1rem; border: 1px dashed var(--passenger-border-color); }
 
-/* --- 8. REFINED Quick Actions --- */
-.quick-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
-.action-card { background-color: var(--passenger-card-bg); border-radius: 1.25rem; padding: 1.25rem 1rem; text-align: center; cursor: pointer; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.07); border: 1px solid var(--passenger-border-color); transition: all 0.2s ease; }
-.action-card:hover { transform: translateY(-5px); box-shadow: 0 12px 35px rgba(0,0,0,0.1); }
-.action-icon { width: 48px; height: 48px; border-radius: 1rem; margin: 0 auto 1rem; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 24px; }
+/* --- 8. Refined Quick Actions --- */
+.quick-actions-section { margin-bottom: 1rem; }
+.quick-actions { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+.action-card {
+  background-color: var(--passenger-card-bg); border-radius: 1.25rem; padding: 1.25rem 1rem; text-align: center;
+  cursor: pointer; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.07); border: 1px solid var(--passenger-border-color);
+  transition: all 0.2s ease;
+}
+.action-card:hover { transform: translateY(-5px); box-shadow: 0 12px 40px rgba(0,0,0,0.1); }
+.action-icon {
+  width: 48px; height: 48px; border-radius: 1rem; margin: 0 auto 1rem; display: flex;
+  align-items: center; justify-content: center; color: #fff; font-size: 24px;
+}
 .scan-icon { background: var(--passenger-primary); }
 .book-icon { background: var(--passenger-secondary); }
 .action-card h4 { font-size: 0.9rem; font-weight: 600; margin: 0; color: var(--passenger-text-primary); }
 .action-card p { font-size: 0.75rem; color: var(--passenger-text-secondary); margin: 0.25rem 0 0; }
 
-/* --- 9. NEW: Scan Result Alert --- */
-.scan-result-alert {
-  margin-bottom: 1.5rem;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  border-radius: 12px;
+/* --- 9. Payment Modal --- */
+.payment-modal-body {
+  display: flex; flex-direction: column; gap: 1.5rem;
+  padding: 1rem 1.5rem 1.5rem 1.5rem !important;
 }
+.vehicle-info-display {
+  display: flex; align-items: center; gap: 1rem; background-color: var(--passenger-input-bg);
+  padding: 0.75rem 1rem; border-radius: 12px;
+}
+.vehicle-info-display .material-icons-outlined { font-size: 2rem; color: var(--passenger-primary); }
+.vehicle-info-display div { display: flex; flex-direction: column; }
+.vehicle-info-display span { font-size: 0.8rem; color: var(--passenger-text-secondary); }
+.vehicle-info-display strong { font-weight: 600; color: var(--passenger-text-primary); }
+
+/* Payment Result Styling */
+.payment-result {
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  padding: 1rem 0;
+}
+.payment-result .result-icon { font-size: 4rem; margin-bottom: 1rem; }
+.payment-result h4 { font-size: 1.5rem; font-weight: 600; margin: 0 0 0.5rem 0; }
+.payment-result p { color: var(--passenger-text-secondary); margin-bottom: 1.5rem; }
+.payment-result.success .result-icon, .payment-result.success h4 { color: var(--status-green); }
+.payment-result.error .result-icon, .payment-result.error h4 { color: var(--status-red); }

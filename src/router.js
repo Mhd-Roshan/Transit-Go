@@ -1,5 +1,3 @@
-// src/router.js
-
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 
 // Public Pages
@@ -44,11 +42,12 @@ function AppRouter() {
          <Route path="/report" element={<ReportPage />} /> 
 
         {/* --- OPERATOR ROUTES --- */}
-        <Route path="/operator" element={<OperatorLayout />}>
-          <Route path="dashboard" element={<OperatorDashboard />} />
-          <Route path="routes" element={<OperatorRoutesPage />} />
+        <Route element={<OperatorLayout />}>
+          <Route path="/operator" element={<Navigate to="/operator/dashboard" />} />
+          <Route path="/operator/dashboard" element={<OperatorDashboard />} />
+          <Route path="/operator/routes" element={<OperatorRoutesPage />} />
         </Route>
-       
+        
         
         {/* --- ADMIN ROUTES --- */}
         <Route path="/admin/dashboard" element={<AdminDashboardPage />} />

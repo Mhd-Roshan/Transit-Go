@@ -1,37 +1,191 @@
-.dashboard-header {
-  position: sticky;
-  top: 0;
-  z-index: 1030;
+/* src/styles/opdashboard.css */
+
+/* --- Modern Operator Dashboard CSS (2025 Style - Vision Pro Inspired) --- */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
+
+/* --- 1. Root Variables & Dark Mode --- */
+:root {
+  --op-primary: #007aff;
+  --op-success: #34c759;
+  --op-danger: #ff3b30;
+  --op-background: #f2f2f7;
+  --op-card-bg: #ffffff;
+  --op-text-primary: #1d1d1f;
+  --op-text-secondary: #6e6e73;
+  --op-border-color: #e5e5ea;
+  --op-glass-bg: rgba(242, 242, 247, 0.7);
+  --op-glass-border: rgba(229, 229, 234, 0.8);
+  --op-hover-bg: rgba(0, 0, 0, 0.05);
+  --soft-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
 }
 
-.dashboard-footer {
-  position: sticky;
-  bottom: 0;
-  z-index: 1020;
-  border-top: 1px solid rgba(0,0,0,0.06);
+@media (prefers-color-scheme: dark) {
+  :root {
+    --op-background: #000000;
+    --op-card-bg: #1c1c1e;
+    --op-text-primary: #f5f5f7;
+    --op-text-secondary: #8d8d92;
+    --op-border-color: #38383a;
+    --op-glass-bg: rgba(28, 28, 30, 0.7);
+    --op-glass-border: rgba(56, 56, 58, 0.8);
+    --op-hover-bg: rgba(255, 255, 255, 0.08);
+  }
 }
 
-.min-vh-100 {
-  min-height: 100vh;
+/* --- 2. Animations & Layout Shell --- */
+@keyframes fade-in-slide-up { 
+  from { opacity: 0; transform: translateY(20px); } 
+  to { opacity: 1; transform: translateY(0); } 
 }
 
-.bg-light {
-  background-color: #f7f9fc !important;
+.operator-layout-fixed {
+  background-color: var(--op-background);
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-.container {
-  max-width: 960px;
+.operator-main-scrollable {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 1.5rem; /* Increased padding */
+  width: 100%;
 }
 
-.nav-link.text-secondary small,
-.nav-link.text-secondary .material-icons,
-.nav-link.text-secondary svg {
-  color: #6c757d !important;
+.operator-main-scrollable::-webkit-scrollbar { width: 8px; }
+.operator-main-scrollable::-webkit-scrollbar-track { background: transparent; }
+.operator-main-scrollable::-webkit-scrollbar-thumb { background-color: rgba(0,0,0,0.15); border-radius: 8px; }
+@media (prefers-color-scheme: dark) {
+  .operator-main-scrollable::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,0.15); }
 }
 
-.nav-link.text-primary small,
-.nav-link.text-primary .material-icons,
-.nav-link.text-primary svg {
-  color: #0d6efd !important;
+/* --- 3. Header & Navigation --- */
+.operator-header-glass, .operator-bottom-nav-glass {
+  position: fixed;
+  left: 1rem;
+  right: 1rem;
+  width: auto;
+  z-index: 1000;
+  background-color: var(--op-glass-bg);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border-radius: 99px;
+  border: 1px solid var(--op-glass-border);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+}
+.operator-header-glass {
+  top: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+}
+.operator-main-scrollable { padding-top: 6rem; padding-bottom: 6rem; }
+.operator-bottom-nav-glass {
+  bottom: 1rem;
+  display: flex;
+  justify-content: space-around;
+  padding: 0.5rem;
+}
+.operator-header-glass .brand h1 { font-size: 1.3rem; font-weight: 700; }
+.operator-header-glass .profile-pic { width: 40px; height: 40px; }
+.operator-header-glass .action-btn { transition: all 0.2s ease; }
+.operator-header-glass .action-btn:hover { background-color: var(--op-hover-bg); transform: scale(1.1); }
+.operator-bottom-nav-glass .nav-item { transition: all 0.25s cubic-bezier(0.25, 1, 0.5, 1); }
+.operator-bottom-nav-glass .nav-item:hover:not(.active) { transform: translateY(-3px); }
+.operator-bottom-nav-glass .nav-item.active { background-color: var(--op-primary); color: #fff; transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0, 122, 255, 0.3); }
+
+/* --- 4. Modernized Content Cards --- */
+.dashboard-card {
+  background-color: var(--op-card-bg);
+  color: var(--op-text-primary);
+  border-radius: 1.25rem; /* Softer corners */
+  box-shadow: var(--soft-shadow);
+  margin-bottom: 1.5rem;
+  animation: fade-in-slide-up 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  opacity: 0;
+  border: 1px solid var(--op-border-color);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.dashboard-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 45px rgba(0,0,0,0.12);
+}
+.dashboard-card .card-title {
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: var(--op-text-primary);
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--op-border-color);
 }
 
+/* --- 5. Component-Specific Styling --- */
+.status-container { text-align: center; }
+
+/* Vehicle & QR Card */
+.vehicle-details-grid { gap: 1.5rem; }
+.vehicle-id {
+  font-size: 2.5rem; /* Larger ID */
+  font-weight: 800; /* Bolder */
+  color: var(--op-primary);
+  line-height: 1.1;
+  letter-spacing: -1.5px;
+}
+.vehicle-model { font-size: 1.05rem; }
+.qr-code-wrapper {
+  background: white;
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 1px solid var(--op-border-color);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+.collection-display .collection-amount.text-success { color: var(--op-success) !important; font-weight: 700; font-size: 1.75rem; }
+
+/* 'No Vehicle' State */
+.no-collection-msg { 
+  margin: 0;
+  font-size: 0.95rem; 
+  color: var(--op-text-secondary);
+}
+
+/* Schedule Tracker */
+.schedule-timeline { 
+  position: relative; 
+  padding-left: 1.5rem;
+  border-left: 2px solid var(--op-border-color);
+}
+.schedule-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 0 1rem 1.5rem;
+}
+.schedule-item::after { display: none; } /* Remove old line */
+.schedule-item::before { /* The dot on the timeline */
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: -2.4rem; /* Position over the border */
+  transform: translate(-50%, -50%);
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 3px solid var(--op-background);
+  background-color: var(--op-border-color);
+  z-index: 1;
+  transition: all 0.3s ease;
+}
+.schedule-item.completed::before {
+  background-color: var(--op-success);
+  box-shadow: 0 0 0 4px var(--op-card-bg), 0 0 0 6px var(--op-success);
+}
+.schedule-item:not(:last-child) {
+  border-bottom: 1px solid var(--op-border-color);
+}
+.schedule-time { font-weight: 600; font-size: 1rem; }
+.schedule-location { color: var(--op-text-secondary); font-size: 0.9rem; }
+.completed-icon { color: var(--op-success); font-size: 1.75rem; }

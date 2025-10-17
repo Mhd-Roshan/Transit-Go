@@ -5,24 +5,64 @@ import User from '../models/User.js';
 
 const router = express.Router();
 
+// @route   GET api/assignments/active
+// @desc    Get all currently assigned/active buses for passengers to see
+// @access  Private (Authenticated Users)
+router.get('/active', authMiddleware, async (req, res) => {
+  try {
+    const activeAssignments = await Assignment.find().populate(
+      'vehicle',
+      'vehicleId model source destination'
+    );
+
+    if (!activeAssignments || activeAssignments.length === 0) {
+      return res.json([]);
+    }
+    
+    // --- THIS IS THE FIX ---
+    // Filter out any assignments where the vehicle might have been deleted (is null)
+    const validAssignments = activeAssignments.filter(assignment => assignment.vehicle);
+
+    const now = new Date();
+    let lastDeparture = new Date(now.getTime() + (Math.random() * 5 + 2) * 60000);
+    const statuses = ['On Time', 'On Time', 'Scheduled', 'Delayed'];
+
+    const scheduledBuses = validAssignments.map(assignment => {
+      const currentDeparture = new Date(lastDeparture.getTime());
+      const interval = (Math.random() * 15 + 10) * 60000;
+      lastDeparture = new Date(lastDeparture.getTime() + interval);
+
+      return {
+        _id: assignment._id,
+        vehicle: assignment.vehicle,
+        departureTime: currentDeparture,
+        status: statuses[Math.floor(Math.random() * statuses.length)],
+      };
+    });
+    
+    res.json(scheduledBuses);
+
+  } catch (err) {
+    console.error("Error fetching active assignments:", err.message);
+    res.status(500).send('Server Error');
+  }
+});
+
+
 // @route   POST api/assignments
 // @desc    Create a new assignment (Admin)
 router.post('/', authMiddleware, async (req, res) => {
-  // The 'fareId' is never sent from the frontend, so it's removed here.
   const { operatorId, vehicleId } = req.body;
   try {
     const newAssignment = new Assignment({
       operator: operatorId,
       vehicle: vehicleId,
-      // The 'fare' field is omitted since it's optional and not provided.
     });
     const assignment = await newAssignment.save();
     
-    // Populate the response with details, but without the 'fare'.
     const populatedAssignment = await Assignment.findById(assignment._id)
         .populate('operator', 'fullName')
         .populate('vehicle');
-        // --- FIX: Removed .populate('fare') ---
 
     res.status(201).json(populatedAssignment);
   } catch (err) {
@@ -38,7 +78,6 @@ router.get('/', authMiddleware, async (req, res) => {
     const assignments = await Assignment.find()
       .populate('operator', 'fullName')
       .populate('vehicle')
-      // --- FIX: Removed .populate('fare') ---
       .sort({ assignmentDate: -1 });
       
     res.json(assignments);
@@ -54,7 +93,6 @@ router.get('/my-assignment', authMiddleware, async (req, res) => {
     try {
         const assignment = await Assignment.findOne({ operator: req.user.id })
             .populate('vehicle');
-            // --- FIX: Removed .populate('fare') ---
 
         if (!assignment) {
             return res.status(404).json({ msg: 'No assignment found for this operator.' });

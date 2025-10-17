@@ -22,6 +22,11 @@ const TransactionSchema = new mongoose.Schema({
   description: {
     type: String, // e.g., "Payment for pending fine #FN20240721"
   },
+  // --- THIS IS THE REQUIRED UPDATE ---
+  trip: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Trip', // Creates a link to a specific Trip document
+  },
   paymentMethod: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'PaymentMethod',

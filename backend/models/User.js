@@ -10,7 +10,6 @@ const UserSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
-  // --- NEW FIELD ADDED ---
   phoneNumber: {
     type: String,
     required: true,
@@ -25,11 +24,16 @@ const UserSchema = new mongoose.Schema({
     enum: ['Passenger', 'Operator','Admin'],
     default: 'Passenger',
   },
-  // Adding a status field for Operator approval
   status: {
     type: String,
     enum: ['Pending', 'Approved'],
     default: 'Approved', // Passengers are approved by default
+  },
+  // --- THIS IS THE REQUIRED UPDATE ---
+  walletBalance: {
+    type: Number,
+    required: true,
+    default: 0, // All new users will start with a wallet balance of 0
   },
   date: {
     type: Date,

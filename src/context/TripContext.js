@@ -1,36 +1,111 @@
-import React, { createContext, useState, useContext, useCallback } from 'react';
+// src/context/TripContext.js
 
-// 1. Create the context which will be shared
+import React, { createContext, useState, useContext, useCallback, useRef } from 'react';
+
 const TripContext = createContext();
 
-// 2. Create a custom hook for easy access in components
 export const useTrip = () => {
   return useContext(TripContext);
 };
 
-// 3. Create the Provider component that will hold the state and logic
 export const TripProvider = ({ children }) => {
+  // State for the trip
+  const [isTripActive, setIsTripActive] = useState(false);
+  const [currentLeg, setCurrentLeg] = useState(0);
+  const [currentBusPosition, setCurrentBusPosition] = useState(null);
   const [completedStops, setCompletedStops] = useState(new Set());
+  const [selectedVehicle, setSelectedVehicle] = useState(null);
+  
+  // Refs to hold interval IDs for cleanup
+  const movementIntervalRef = useRef(null);
+  const scheduleIntervalRef = useRef(null);
 
-  // Function to add a stop index to the completed set
+  const clearAllIntervals = () => {
+    clearInterval(movementIntervalRef.current);
+    clearInterval(scheduleIntervalRef.current);
+    movementIntervalRef.current = null;
+    scheduleIntervalRef.current = null;
+  };
+
   const markStopAsComplete = useCallback((stopIndex) => {
     setCompletedStops(prevStops => {
-      const newStops = new Set(prevStops); // Create a new set to trigger re-renders
+      const newStops = new Set(prevStops);
       newStops.add(stopIndex);
       return newStops;
     });
   }, []);
   
-  // Function to clear all completed stops, e.g., for a new trip
   const resetCompletedStops = useCallback(() => {
     setCompletedStops(new Set());
   }, []);
 
-  // The value that will be available to all consumer components
+  const endSimulation = useCallback((completed = false, onTripEnd) => {
+    clearAllIntervals();
+    setIsTripActive(false);
+    if (typeof onTripEnd === 'function') {
+      onTripEnd(completed);
+    }
+  }, []);
+
+  const startSimulation = useCallback((config) => {
+    const { routeCoordinates, schedule, onTripEnd, interval = 5000 } = config;
+
+    // Safety check
+    if (!routeCoordinates || routeCoordinates.length === 0 || !schedule || schedule.length === 0) {
+      console.error("Simulation start failed: Missing route or schedule data.");
+      return;
+    }
+
+    // Reset any previous trip
+    clearAllIntervals();
+    resetCompletedStops();
+
+    // Initialize state for the new trip
+    setIsTripActive(true);
+    setCurrentLeg(0);
+    setCurrentBusPosition(routeCoordinates[0]);
+    markStopAsComplete(0); // Always complete the first stop on start
+
+    // SIMULATION 1: Bus Movement on the Map
+    movementIntervalRef.current = setInterval(() => {
+      setCurrentLeg(prevLeg => {
+        const nextLeg = prevLeg + 1;
+        if (nextLeg >= routeCoordinates.length) {
+          clearInterval(movementIntervalRef.current);
+          return prevLeg;
+        }
+        setCurrentBusPosition(routeCoordinates[nextLeg]);
+        return nextLeg;
+      });
+    }, interval);
+
+    // SIMULATION 2: Accurate Schedule Tracker Progression
+    let currentStopIndex = 0;
+    const totalTripDuration = (routeCoordinates.length - 1) * interval;
+    const scheduleIntervalTime = totalTripDuration / (schedule.length - 1);
+
+    scheduleIntervalRef.current = setInterval(() => {
+      currentStopIndex++;
+      if (currentStopIndex < schedule.length) {
+        markStopAsComplete(currentStopIndex);
+      } else {
+        endSimulation(true, onTripEnd);
+      }
+    }, scheduleIntervalTime);
+
+  }, [resetCompletedStops, markStopAsComplete, endSimulation]);
+
   const value = {
     completedStops,
     markStopAsComplete,
     resetCompletedStops,
+    isTripActive,
+    currentLeg,
+    currentBusPosition,
+    selectedVehicle,
+    setSelectedVehicle,
+    startSimulation,
+    endSimulation,
   };
 
   return <TripContext.Provider value={value}>{children}</TripContext.Provider>;

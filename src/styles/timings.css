@@ -1,49 +1,113 @@
 /* --- Modern Passenger Timings CSS (2025 Style - Final Polish) --- */
 
 /* --- 1. Root Variables & Dark Mode --- */
-/* ... (This section is unchanged and correct) ... */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
-:root { --passenger-primary: #1e88e5; --passenger-background: #f4f5f9; --passenger-card-bg: #ffffff; --passenger-text-primary: #263238; --passenger-text-secondary: #78909c; --passenger-border-color: #e0e0e0; --passenger-glass-bg: rgba(255, 255, 255, 0.7); --passenger-hover-bg: rgba(0,0,0,0.04); --status-green: #198754; --status-red: #dc3545; --status-blue: #0d6efd; --status-green-bg: #d1e7dd; --status-red-bg: #f8d7da; --status-blue-bg: #cfe2ff; }
-@media (prefers-color-scheme: dark) { :root { --passenger-background: #000000; --passenger-card-bg: #1c1c1e; --passenger-text-primary: #f5f5f7; --passenger-text-secondary: #8d8d92; --passenger-border-color: #38383a; --passenger-glass-bg: rgba(28, 28, 30, 0.75); --passenger-hover-bg: rgba(255,255,255,0.08); --status-green-bg: rgba(25, 135, 84, 0.2); --status-red-bg: rgba(220, 53, 69, 0.2); --status-blue-bg: rgba(13, 110, 253, 0.2); } }
+:root { 
+  --passenger-primary: #007aff; 
+  --passenger-background: #f2f2f7; 
+  --passenger-card-bg: #ffffff; 
+  --passenger-text-primary: #1d1d1f; 
+  --passenger-text-secondary: #6e6e73; 
+  --passenger-border-color: #e5e5ea; 
+  --passenger-input-bg: #f2f2f7; 
+  --status-green: #30d158; 
+  --status-red: #ff453a; 
+  --status-blue: #0a84ff; 
+  --status-green-bg: rgba(48, 209, 88, 0.15); 
+  --status-red-bg: rgba(255, 69, 58, 0.15); 
+  --status-blue-bg: rgba(10, 132, 255, 0.15); 
+}
+@media (prefers-color-scheme: dark) { 
+  :root { 
+    --passenger-background: #000000; 
+    --passenger-card-bg: #1c1c1e; 
+    --passenger-text-primary: #f5f5f7; 
+    --passenger-text-secondary: #8d8d92; 
+    --passenger-border-color: #38383a; 
+    --passenger-input-bg: #2c2c2e; 
+    --status-green-bg: rgba(48, 209, 88, 0.2); 
+    --status-red-bg: rgba(255, 69, 58, 0.2); 
+    --status-blue-bg: rgba(10, 132, 255, 0.2); 
+  } 
+}
 
 /* --- 2. Animations --- */
-/* ... (This section is unchanged and correct) ... */
-@keyframes fade-in { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
-.animate-fade-in { opacity: 0; animation: fade-in 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
-.bus-card { opacity: 0; animation: fade-in 0.5s ease-out forwards; }
+@keyframes fade-in { 
+  from { opacity: 0; transform: translateY(15px); } 
+  to { opacity: 1; transform: translateY(0); } 
+}
+.animate-fade-in { 
+  opacity: 0; 
+  animation: fade-in 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards; 
+}
+.bus-card { 
+  opacity: 0; 
+  animation: fade-in 0.5s ease-out forwards; 
+}
 
-/* --- 3. Base Layout & Header --- */
-/* ... (This section is unchanged and correct) ... */
-.timings-page { background-color: var(--passenger-background); min-height: 100vh; font-family: 'Poppins', sans-serif; padding-bottom: 7rem; }
-.header-container { position: sticky; top: 0; z-index: 1000; padding: 1rem; pointer-events: none; }
-.passenger-header { max-width: 500px; margin: 0 auto; pointer-events: auto; display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; background-color: var(--passenger-glass-bg); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); border-radius: 99px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12); border: 1px solid var(--passenger-border-color); }
-.user-info { display: flex; align-items: center; gap: 0.75rem; }
-.profile-pic { width: 44px; height: 44px; }
-.user-info span { font-size: 0.85rem; color: var(--passenger-text-secondary); }
-.user-info h3 { font-size: 1.1rem; font-weight: 600; margin: 0; color: var(--passenger-text-primary); }
-.header-action-btn { background: transparent; border: none; cursor: pointer; color: var(--passenger-text-secondary); width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: all 0.2s ease; }
-.header-action-btn:hover { background-color: var(--passenger-hover-bg); color: var(--passenger-primary); }
+/* --- 3. Base Layout --- */
 
-/* --- 4. Main Content & Search --- */
-/* ... (This section is unchanged and correct) ... */
-.timings-main { padding: 1rem; }
-.hero-section { text-align: center; margin-bottom: 2rem; }
-.hero-section h2 { font-size: 1.8rem; font-weight: 700; color: var(--passenger-text-primary); }
-.hero-section p { font-size: 1rem; color: var(--passenger-text-secondary); }
-.search-bar { display: flex; align-items: center; gap: 0.75rem; background-color: var(--passenger-card-bg); border-radius: 12px; padding: 0.75rem 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid var(--passenger-border-color); }
-.search-bar:focus-within { border-color: var(--passenger-primary); box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.15); }
+/* --- 4. NEW: Unified Schedules Section --- */
+/* This is the main container for the entire page's content */
+
+.schedules-header {
+  margin-bottom: 2rem;
+}
+
+.schedules-title-group h2 { 
+  font-size: 1.8rem; 
+  font-weight: 700; 
+  color: var(--passenger-text-primary); 
+  margin-bottom: 0.25rem;
+  text-align: center;
+}
+.schedules-title-group p { 
+  font-size: 1rem; 
+  color: var(--passenger-text-secondary); 
+  max-width: 400px;
+  margin: 0 auto 1.5rem auto;
+  text-align: center;
+}
+
+.search-bar { 
+  display: flex; 
+  align-items: center; 
+  gap: 0.75rem; 
+  background-color: var(--passenger-card-bg); 
+  border-radius: 12px; 
+  padding: 0.75rem 1rem; 
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05); 
+  border: 1px solid var(--passenger-border-color);
+  max-width: 500px;
+  margin: 0 auto;
+}
+.search-bar:focus-within { 
+  border-color: var(--passenger-primary); 
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15); 
+}
 .search-bar .material-icons { color: var(--passenger-text-secondary); }
-.search-bar input { border: none; outline: none; width: 100%; font-size: 1rem; background: none; color: var(--passenger-text-primary); }
+.search-bar input { 
+  border: none; outline: none; width: 100%; font-size: 1rem; 
+  background: none; color: var(--passenger-text-primary); 
+}
 .search-bar input::placeholder { color: var(--passenger-text-secondary); }
 
-/* --- 5. REFINED Upcoming Buses Section --- */
-.upcoming-buses h3 { font-size: 1.4rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--passenger-text-primary); }
-.bus-list { display: grid; gap: 1rem; }
+/* --- 5. Bus List --- */
+.schedules-content h3 { 
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin-bottom: 1.25rem;
+  color: var(--passenger-text-primary);
+}
+.bus-list { 
+  display: grid; 
+  gap: 1rem; 
+}
 
 .bus-card {
   display: flex; 
   justify-content: space-between; 
-  align-items: center; /* Center items vertically */
+  align-items: center;
   background-color: var(--passenger-card-bg); 
   border-radius: 1rem;
   padding: 1.25rem; 
@@ -51,36 +115,57 @@
   border: 1px solid var(--passenger-border-color);
   transition: all 0.2s ease;
 }
-.bus-card:hover { transform: translateY(-4px); box-shadow: 0 8px 25px rgba(0,0,0,0.08); }
+.bus-card:hover { 
+  transform: translateY(-4px); 
+  box-shadow: 0 8px 25px rgba(0,0,0,0.08); 
+}
 
-/* NEW: Wrapper for all left-side content */
 .bus-details {
   display: flex;
   align-items: center;
-  gap: 1.5rem; /* Space between route info and time info */
+  gap: 1.5rem;
+  flex-wrap: wrap;
 }
 
-.bus-info h4 { font-size: 1.1rem; font-weight: 600; margin: 0 0 0.25rem 0; color: var(--passenger-text-primary); }
-.bus-info p { margin: 0; color: var(--passenger-text-secondary); }
-.bus-info strong { color: var(--passenger-text-primary); }
+.bus-info h4 { 
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem 0;
+  color: var(--passenger-text-primary);
+}
+.bus-info p { 
+  margin: 0; 
+  font-size: 0.85rem;
+  color: var(--passenger-text-secondary);
+}
+.bus-info strong { 
+  color: var(--passenger-text-primary); 
+  font-weight: 500;
+}
 
-/* NEW: Styles for the departure time and countdown */
-.departure-info { text-align: left; }
+.departure-info { 
+  text-align: left; 
+  flex-shrink: 0;
+}
 .departs-at { font-size: 0.8rem; color: var(--passenger-text-secondary); }
-.departure-time { display: block; font-size: 1.1rem; font-weight: 600; color: var(--passenger-text-primary); }
+.departure-time { display: block; font-size: 1rem; font-weight: 600; color: var(--passenger-text-primary); }
 .departs-in { font-size: 0.85rem; font-weight: 500; color: var(--passenger-primary); }
 
-.status-badge { font-size: 0.75rem; font-weight: 600; padding: 0.3rem 0.75rem; border-radius: 99px; flex-shrink: 0; /* Prevents badge from shrinking */ }
+.status-badge { 
+  font-size: 0.75rem; font-weight: 600; padding: 0.3rem 0.75rem; 
+  border-radius: 99px; flex-shrink: 0;
+}
 .status-badge.on-time { color: var(--status-green); background-color: var(--status-green-bg); }
 .status-badge.delayed { color: var(--status-red); background-color: var(--status-red-bg); }
 .status-badge.scheduled { color: var(--status-blue); background-color: var(--status-blue-bg); }
 
 /* --- 6. Dynamic States --- */
-/* ... (This section is unchanged and correct) ... */
-.loading-indicator, .error-banner, .empty-state { text-align: center; padding: 2rem; border-radius: 1rem; margin-top: 1rem; }
+.loading-indicator, .error-banner, .empty-state { 
+  text-align: center; padding: 2.5rem; border-radius: 1rem; margin-top: 1.5rem; 
+}
 .loading-indicator { color: var(--passenger-text-secondary); }
-.error-banner { background-color: rgba(220, 53, 69, 0.1); color: var(--status-red); font-weight: 500; }
+.error-banner { background-color: var(--status-red-bg); color: var(--status-red); font-weight: 500; }
 .empty-state { background-color: var(--passenger-card-bg); border: 1px dashed var(--passenger-border-color); }
-.empty-state .empty-icon { font-size: 2.5rem; color: var(--passenger-text-secondary); }
-.empty-state h4 { margin: 1rem 0 0.5rem; color: var(--passenger-text-primary); }
+.empty-state .empty-icon { font-size: 2.5rem; color: var(--passenger-text-secondary); opacity: 0.7; }
+.empty-state h4 { margin: 1rem 0 0.5rem; color: var(--passenger-text-primary); font-weight: 600; }
 .empty-state p { margin: 0; color: var(--passenger-text-secondary); }
