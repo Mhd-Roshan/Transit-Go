@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import axios from "axios";
-import { Spinner, Card, Button, Alert } from "react-bootstrap";
+import { Spinner, Alert } from "react-bootstrap";
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -64,10 +64,8 @@ function OperatorRoutesPage() {
       const token = localStorage.getItem("token");
       const headers = { Authorization: `Bearer ${token}` };
       const res = await axios.get("http://localhost:5000/api/assignments/my-assignment", { headers });
-      
       setMyAssignment(res.data);
       setSelectedVehicle(res.data.vehicle);
-
     } catch (err) {
       if (err.response?.status === 404) {
         setMyAssignment(null);
@@ -89,17 +87,15 @@ function OperatorRoutesPage() {
       alert("Cannot start trip without an assigned vehicle.");
       return;
     }
-
     if (isTripActive) {
       endSimulation(false, () => {
         alert(`Trip with Vehicle ${myAssignment.vehicle.vehicleId} has been stopped.`);
       });
     } else {
       alert(`Starting trip with Vehicle ${myAssignment.vehicle.vehicleId}.`);
-      // --- THIS IS THE CORRECTED CALL ---
       startSimulation({
         routeCoordinates,
-        schedule: fullSchedule, // Pass the full schedule
+        schedule: fullSchedule,
         onTripEnd: (completed) => {
           if (completed) {
             alert(`Trip with Vehicle ${myAssignment.vehicle.vehicleId} completed!`);
@@ -110,12 +106,24 @@ function OperatorRoutesPage() {
   };
 
   const renderContent = () => {
-    if (loading) return ( <div className="status-container"><Spinner animation="border" variant="primary" /><p>Loading Your Assignment...</p></div> );
+    if (loading) return ( <div className="status-container"><Spinner animation="border" variant="primary" /><p className="mt-2">Loading Assignment...</p></div> );
     if (error) return ( <div className="status-container"><Alert variant="danger">{error}</Alert></div> );
     
+    // --- RENDER NO ASSIGNMENT VIEW ---
+    if (!myAssignment || !myAssignment.vehicle) {
+        return (
+            <div className="no-assignment-container">
+                <span className="material-icons icon">map</span>
+                <h2>No Active Route</h2>
+                <p>You must be assigned a vehicle by an administrator to view and start a route.</p>
+            </div>
+        );
+    }
+
+    // --- RENDER LIVE TRIP VIEW ---
     return (
-      <>
-        <Card className="dashboard-card map-card">
+      <div className="live-trip-card">
+        <div className="map-wrapper">
           <MapContainer
             center={currentBusPosition || routeCoordinates[0]}
             zoom={15}
@@ -124,60 +132,50 @@ function OperatorRoutesPage() {
             ref={mapRef}
           >
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-            <Polyline positions={routeCoordinates} color="blue" />
+            <Polyline positions={routeCoordinates} color="#007aff" weight={5} />
             {isTripActive && currentBusPosition && selectedVehicle && (
               <Marker position={currentBusPosition} icon={busIcon}>
-                <Popup>Vehicle: {selectedVehicle.vehicleId}</Popup>
+                <Popup>Vehicle: {selectedVehicle.vehicleId} (Live)</Popup>
               </Marker>
             )}
           </MapContainer>
-          
-          <Card.Body>
-            <div className="route-info">
-              <div className="route-text">
-                <h3>{selectedVehicle ? `${selectedVehicle.model} (${selectedVehicle.vehicleId})` : "No Vehicle Assigned"}</h3>
-              </div>
-              <Button 
-                variant={isTripActive ? "danger" : "primary"}
-                onClick={handleTripToggle} 
-                disabled={!selectedVehicle}
-              >
-                {isTripActive ? 'End Trip' : 'Start Trip'}
-              </Button>
-            </div>
-          </Card.Body>
-        </Card>
+        </div>
         
-        <section className="vehicle-selection">
-          <h2 className="section-title">Your Active Assignment</h2>
-          {myAssignment && myAssignment.vehicle ? (
-            <div className="vehicle-list">
-              <div className="vehicle-item selected">
-                <span className="material-icons vehicle-icon">directions_bus</span>
-                <div className="vehicle-details">
-                  <span className="vehicle-name">{myAssignment.vehicle.model} ({myAssignment.vehicle.vehicleId})</span>
-                  <span className="status on-time">Assigned to you</span>
-                </div>
-                <span className="material-icons assigned-check">check_circle</span>
-              </div>
-            </div>
-          ) : (
-            <Alert variant="info" className="text-center">
-              You are not currently assigned to a vehicle. Please contact an administrator.
-            </Alert>
-          )}
-        </section>
-      </>
+        <div className="trip-controls">
+          <div className="route-details">
+            <p className="route-label">
+                {selectedVehicle.model} ({selectedVehicle.vehicleId})
+            </p>
+            <h3 className="route-path">
+              <span>{selectedVehicle.source || 'Start'}</span>
+              <span className="material-icons">east</span>
+              <span>{selectedVehicle.destination || 'End'}</span>
+            </h3>
+          </div>
+          
+          <button 
+            className={`trip-toggle-btn ${isTripActive ? 'end-trip' : 'start-trip'}`}
+            onClick={handleTripToggle} 
+            disabled={!selectedVehicle}
+          >
+            <span className="material-icons">{isTripActive ? 'stop_circle' : 'play_circle'}</span>
+            {isTripActive ? 'End Trip' : 'Start Trip'}
+          </button>
+        </div>
+      </div>
     );
   };
 
   return (
-    <>
+    <div className="operator-routes-page">
       <div className="page-header">
-        <h2 className="page-title">Live Route</h2>
+        <div>
+            <h2 className="page-title">Live Trip Control</h2>
+            <p className="page-subtitle">Manage your active route and track your progress.</p>
+        </div>
       </div>
       {renderContent()}
-    </>
+    </div>
   );
 }
 

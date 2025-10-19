@@ -33,11 +33,7 @@ function AssignOperatorsPage() {
           axios.get("http://localhost:5000/api/assignments", { headers }),
         ]);
         
-        // --- THIS IS THE CRITICAL FIX ---
-        // Only include operators who have been approved by an admin.
-        const operators = userRes.data.filter(
-          u => u.role === "Operator" && u.status === "Approved"
-        );
+        const operators = userRes.data.filter(u => u.role === "Operator" && u.status === "Approved");
         
         setAllOperators(operators);
         setAllVehicles(vehicleRes.data);
@@ -45,7 +41,6 @@ function AssignOperatorsPage() {
 
       } catch (err) {
         setError("Failed to load data. Please ensure the server is running.");
-        console.error("Data fetch error:", err);
       } finally {
         setLoading(false);
       }
@@ -75,11 +70,6 @@ function AssignOperatorsPage() {
     }
   };
 
-  const handleVehicleSelect = (e) => {
-    setSelectedVehicle(e.target.value);
-    setSelectedOperator("");
-  };
-
   const handleRemove = async (assignmentIdToRemove) => {
     if (window.confirm("Are you sure you want to remove this assignment?")) {
       const originalAssignments = [...assignments];
@@ -98,18 +88,12 @@ function AssignOperatorsPage() {
   };
 
   const availableVehicles = useMemo(() => {
-    const assignedIds = new Set(
-      assignments.filter(a => a.vehicle).map(a => String(a.vehicle._id))
-    );
+    const assignedIds = new Set(assignments.filter(a => a.vehicle).map(a => String(a.vehicle._id)));
     return allVehicles.filter(v => !assignedIds.has(String(v._id)));
   }, [allVehicles, assignments]);
   
   const availableOperators = useMemo(() => {
-    const assignedIds = new Set(
-      assignments
-        .filter(a => a.operator)
-        .map(a => String(a.operator._id))
-    );
+    const assignedIds = new Set(assignments.filter(a => a.operator).map(a => String(a.operator._id)));
     return allOperators.filter(op => !assignedIds.has(String(op._id)));
   }, [allOperators, assignments]);
 
@@ -118,34 +102,46 @@ function AssignOperatorsPage() {
   return (
     <AdminLayout>
       <div className="assign-operators-page animate-fade-in">
-        <h2 className="page-title">Assign Operators</h2>
-        <p className="page-subtitle">Create and manage links between operators and vehicles.</p>
+        <h2 className="page-title">Assignment Hub</h2>
+        <p className="page-subtitle">Pair available operators with vehicles to create active routes.</p>
         
         {error && <div className="error-banner">{error}</div>}
         {success && <div className="success-banner">{success}</div>}
         
-        <div className="form-card">
-          <div className="form-group">
-            <label>Step 1: Select an available Vehicle</label>
-            <select value={selectedVehicle} onChange={handleVehicleSelect} disabled={loading || isSubmitting}>
-              <option value="">{loading ? "Loading..." : availableVehicles.length > 0 ? "Choose a vehicle..." : "No vehicles available"}</option>
-              {availableVehicles.map(v => <option key={v._id} value={v._id}>{v.model} ({v.vehicleId})</option>)}
-            </select>
-          </div>
-
-          {selectedVehicle && (
-            <div className="form-group animate-slide-down">
-              <label>Step 2: Select an available Operator</label>
-              <select value={selectedOperator} onChange={(e) => setSelectedOperator(e.target.value)} disabled={loading || isSubmitting}>
-                <option value="">{loading ? "Loading..." : availableOperators.length > 0 ? "Choose an operator..." : "No operators available"}</option>
-                {availableOperators.map(op => <option key={op._id} value={op._id}>{op.fullName}</option>)}
-              </select>
+        <div className="assignment-creator-card">
+            <div className="creator-column">
+                <h4 className="column-title">
+                    <span className="material-icons">engineering</span> Available Operators
+                </h4>
+                <div className="selectable-list">
+                    {availableOperators.length > 0 ? availableOperators.map(op => (
+                        <div key={op._id} className={`selectable-item ${selectedOperator === op._id ? 'selected' : ''}`} onClick={() => setSelectedOperator(op._id)}>
+                            <img src={`https://i.pravatar.cc/150?u=${op._id}`} alt="Operator" className="item-avatar"/>
+                            <span>{op.fullName}</span>
+                        </div>
+                    )) : <p className="empty-list-text">No operators available.</p>}
+                </div>
             </div>
-          )}
 
-          <button className="assign-btn" onClick={handleAssign} disabled={isFormInvalid || isSubmitting}>
-            {isSubmitting ? "Assigning..." : "Assign Operator"}
-          </button>
+            <div className="assignment-actions">
+                <button className="assign-btn" onClick={handleAssign} disabled={isFormInvalid || isSubmitting}>
+                    <span className="material-icons">{isSubmitting ? 'sync' : 'link'}</span>
+                </button>
+            </div>
+
+            <div className="creator-column">
+                <h4 className="column-title">
+                    <span className="material-icons">directions_bus</span> Available Vehicles
+                </h4>
+                <div className="selectable-list">
+                    {availableVehicles.length > 0 ? availableVehicles.map(v => (
+                        <div key={v._id} className={`selectable-item ${selectedVehicle === v._id ? 'selected' : ''}`} onClick={() => setSelectedVehicle(v._id)}>
+                            <span className="material-icons item-icon">directions_bus</span>
+                            <span>{v.vehicleId} ({v.model})</span>
+                        </div>
+                    )) : <p className="empty-list-text">No vehicles available.</p>}
+                </div>
+            </div>
         </div>
 
         <h3 className="section-title">Current Assignments</h3>
@@ -153,27 +149,54 @@ function AssignOperatorsPage() {
           <div className="empty-state">
             <span className="material-icons empty-icon">link_off</span>
             <h4 className="empty-title">No Operators Assigned</h4>
-            <p className="empty-subtitle">Use the form above to link an operator to a vehicle.</p>
+            <p className="empty-subtitle">Use the hub above to link an operator to a vehicle.</p>
           </div>
         ) : (
           <div className="assignments-list">
             {assignments
               .filter(a => a.operator && a.vehicle)
-              .map((a, index) => (
-              <div key={a._id} className="assignment-card" style={{ animationDelay: `${index * 50}ms` }}>
-                <img src={`https://i.pravatar.cc/150?u=${a.operator._id}`} alt="Operator" className="operator-avatar"/>
-                <div className="assignment-info">
-                  <p className="operator-name">{a.operator.fullName}</p>
-                  <p className="vehicle-name">
-                    <span className="material-icons">directions_bus</span>
-                    {a.vehicle.model} ({a.vehicle.vehicleId})
-                  </p>
-                </div>
-                <button className="remove-btn" onClick={() => handleRemove(a._id)} title="Remove Assignment">
-                  <span className="material-icons">delete</span>
-                </button>
-              </div>
-            ))}
+              .map((a, index) => {
+                // --- THIS IS THE FIX ---
+                // Create a date object and check its validity before rendering
+                const assignmentDate = new Date(a.createdAt);
+                const isValidDate = !isNaN(assignmentDate);
+
+                return (
+                  <div key={a._id} className="assignment-card" style={{ animationDelay: `${index * 50}ms` }}>
+                    <div className="assignment-info operator">
+                        <img src={`https://i.pravatar.cc/150?u=${a.operator._id}`} alt="Operator" className="operator-avatar"/>
+                        <p className="operator-name">{a.operator.fullName}</p>
+                    </div>
+    
+                    <div className="assignment-connector">
+                        <span className="material-icons">east</span>
+                    </div>
+    
+                    <div className="assignment-info vehicle">
+                        <p className="vehicle-name">
+                            <span className="material-icons">directions_bus</span> 
+                            {a.vehicle.vehicleId} ({a.vehicle.model})
+                        </p>
+                        <p className="vehicle-route">
+                            {a.vehicle.source} 
+                            <span className="material-icons route-arrow">east</span> 
+                            {a.vehicle.destination}
+                        </p>
+                        <p className="assignment-timestamp">
+                            <span className="material-icons timestamp-icon">event</span>
+                            {isValidDate 
+                              ? `Assigned on ${assignmentDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`
+                              : 'Assigned just now'
+                            }
+                        </p>
+                    </div>
+                    
+                    <button className="remove-btn" onClick={() => handleRemove(a._id)} title="Remove Assignment">
+                      <span className="material-icons">delete</span>
+                    </button>
+                  </div>
+                );
+              })}
           </div>
         )}
       </div>

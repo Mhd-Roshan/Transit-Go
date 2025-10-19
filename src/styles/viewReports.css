@@ -35,3 +35,19 @@
   width: 100%; background: var(--admin-primary); color: #fff;
   border: none; border-radius: 8px; padding: 0.75rem; font-weight: 600;
 }
+
+/* --- NEW: PHONE RESPONSIVENESS --- */
+@media (max-width: 768px) {
+  .view-reports-page .page-title { font-size: 1.6rem; }
+  .report-header, .report-body, .report-footer { padding: 1rem; }
+  .report-header { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+  .report-body .description { padding: 0.75rem; }
+}
+
+/* --- Dark Mode (Example) --- */
+@media (prefers-color-scheme: dark) {
+    .status-pill.pending { background: #332b13; color: #d48806; }
+    .status-pill.resolved { background: #1f3315; color: #52c41a; }
+    .report-body .description, .reply-view p { background-color: var(--admin-background); }
+    .reply-form textarea { background-color: #2c2c2e; border-color: #38383a; color: var(--admin-text-primary); }
+}

@@ -25,6 +25,19 @@ html, body {
   z-index: 10;
 }
 
+/* --- FIX: Added padding for mobile view --- */
+.landing-header .container {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+/* --- FIX: Base size for the brand name --- */
+.header-brand h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: white; /* Explicitly set color */
+}
+
 .nav-link-custom {
   color: white;
   font-weight: 500;
@@ -80,6 +93,7 @@ html, body {
   padding: 0 1rem;
 }
 
+/* --- FIX: Mobile-first font sizes --- */
 .hero-title {
   font-size: 2.5rem;
   font-weight: 900;
@@ -105,12 +119,33 @@ html, body {
   background-color: #0f63b8;
 }
 
-/* Responsive text */
+/* --- FIX: Responsive text for larger screens (Unchanged but important) --- */
 @media (min-width: 768px) {
   .hero-title {
     font-size: 3.5rem;
   }
   .hero-subtitle {
     font-size: 1.25rem;
+  }
+}
+
+/* --- FIX: Added media query for small phone screens --- */
+@media (max-width: 480px) {
+  .header-brand h1 {
+    font-size: 1.3rem; /* Make brand name smaller */
+  }
+
+  .hero-title {
+    font-size: 2rem; /* Further reduce title size */
+    line-height: 1.2; /* Improve line spacing */
+  }
+
+  .hero-subtitle {
+    font-size: 1rem; /* Further reduce subtitle size */
+  }
+
+  .btn-get-started {
+    padding: 0.5rem 1rem; /* Adjust button padding */
+    font-size: 0.9rem;
   }
 }

@@ -16,21 +16,30 @@ const VehicleSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
-  // --- NEW FIELDS ADDED HERE ---
   source: {
     type: String,
     trim: true,
-    default: 'Not Set', // Default value if not provided
+    default: 'Not Set',
   },
   destination: {
     type: String,
     trim: true,
-    default: 'Not Set', // Default value if not provided
+    default: 'Not Set',
   },
   registrationDate: {
     type: Date,
-    default: Date.now,
+    required: true,
   },
+  status: {
+    type: String,
+    required: true,
+    // --- THIS IS THE FIX ---
+    // Changed 'Working' to 'Active' to match the frontend and your request.
+    enum: ['Active', 'Under Maintenance', 'Inactive'], 
+    default: 'Active', // A new vehicle defaults to 'Active'
+  },
+}, { 
+  timestamps: true 
 });
 
 const Vehicle = mongoose.model('Vehicle', VehicleSchema);

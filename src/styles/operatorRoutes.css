@@ -1,248 +1,196 @@
-/* --- Operator Routes Page --- */
-:root {
-  --primary-blue: #0d6efd;
-  --light-gray-bg: #f8f9fa;
-  --card-bg: #ffffff;
-  --text-dark: #212529;
-  --text-light: #6c757d;
-  --border-color: #e9ecef;
-  --status-green: #198754;
-  --status-red: #dc3545;
-  --warning-yellow-bg: #fff3cd;
-  --warning-yellow-text: #664d03;
+/* --- Modern Operator Routes CSS (2025 Style - Redesigned) --- */
+
+/* --- 1. Animations --- */
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(0, 122, 255, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(0, 122, 255, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 122, 255, 0); }
 }
 
-.routes-page {
-  background-color: var(--light-gray-bg);
-  min-height: 100vh;
-  /* Add padding to the bottom to prevent content from being hidden by the fixed banner and nav */
-  padding-bottom: 120px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+/* --- 2. Page Layout & Header --- */
+.operator-routes-page {
+  /* Main layout is handled by OperatorLayout's scrollable container */
 }
-
-/* --- Header --- */
-/* Note: This uses .dashboard-header class from the reusable component */
-.dashboard-header .navbar-brand {
-  font-weight: 600 !important;
-}
-
-
-/* --- Main Content Area --- */
-.main-content {
-  padding: 1.5rem;
-}
-
 .page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   margin-bottom: 1.5rem;
 }
-
 .page-title {
   font-size: 2rem;
-  font-weight: 700;
+  font-weight: 800;
+  color: var(--op-text-primary);
   margin: 0;
-  color: var(--text-dark);
+}
+.page-subtitle {
+  font-size: 1.1rem;
+  color: var(--op-text-secondary);
+  margin-top: 0.25rem;
 }
 
-.filter-btn {
+/* --- 3. Main Live Trip Card --- */
+.live-trip-card {
+  background-color: var(--op-card-bg);
+  color: var(--op-text-primary);
+  border-radius: 1.5rem;
+  box-shadow: var(--soft-shadow);
+  border: 1px solid var(--op-border-color);
+  overflow: hidden; /* Important for map corners */
+  animation: fade-in-slide-up 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  opacity: 0;
+}
+
+/* --- 4. Map Styling --- */
+.map-wrapper {
+  position: relative;
+  height: 40vh; /* Adjust height as needed */
+  min-height: 300px;
+}
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+}
+
+/* --- 5. Trip Controls Section --- */
+.trip-controls {
+  padding: 1.5rem;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.route-details .route-label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--op-text-secondary);
+  margin-bottom: 0.25rem;
+}
+.route-details .route-path {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--op-text-primary);
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: none;
+}
+.route-details .route-path .material-icons {
+  font-size: 1.2rem;
+  color: var(--op-text-secondary);
+}
+
+/* --- 6. REDESIGNED Start/End Trip Button --- */
+.trip-toggle-btn {
   border: none;
-  color: var(--primary-blue);
-  font-weight: 500;
+  border-radius: 99px;
+  padding: 1rem 1.75rem;
   font-size: 1rem;
-  cursor: pointer;
-}
-
-/* --- Map Card --- */
-.map-card {
-  background: var(--card-bg);
-  border-radius: 16px;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
-  overflow: hidden; /* This is important to keep the map inside the rounded corners */
-}
-
-/* --- This class controls the size of the interactive map --- */
-.leaflet-container {
-  height: 250px; /* You can adjust this value (e.g., 200px, 300px) */
-  min-height: 200px; /* ensure some visible area in tight layouts */
-  width: 100%;
-  display: block !important; /* avoid flex collapse or inline issues */
-  position: relative !important; /* ensure positioned for leaflet panes */
-  z-index: 1; /* Ensures map is interactable */
-}
-
-/* Ensure parent card doesn't collapse when inside flex containers */
-.map-card { display: block; }
-
-.route-info {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1rem 1.5rem;
-  border-top: 1px solid var(--border-color);
-}
-
-.route-info h3 {
-  font-size: 1.25rem;
   font-weight: 600;
-  margin: 0 0 0.25rem 0;
-}
-
-.route-info p {
-  margin: 0;
-  color: var(--text-light);
-}
-
-.select-route-btn {
-  background-color: var(--primary-blue);
   color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 0.75rem 1.5rem;
-  font-weight: 500;
-}
-
-.select-route-btn:disabled {
-  background-color: #a0bffa;
-  cursor: not-allowed;
-}
-
-
-/* --- Vehicle Selection --- */
-.vehicle-selection {
-  margin-top: 2rem;
-}
-
-.section-title {
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin-bottom: 1rem;
-}
-
-.vehicle-list {
-  display: grid;
-  gap: 0.75rem;
-}
-
-.vehicle-item {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  background: var(--card-bg);
-  padding: 1rem;
-  border-radius: 12px;
-  border: 2px solid var(--border-color);
-  transition: border-color 0.2s ease;
+  justify-content: center;
+  gap: 0.75rem;
   cursor: pointer;
+  transition: all 0.3s ease;
+}
+.trip-toggle-btn .material-icons {
+  transition: transform 0.3s ease;
+}
+.trip-toggle-btn:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+}
+.trip-toggle-btn:disabled {
+  background-color: var(--op-text-secondary) !important;
+  cursor: not-allowed;
+  opacity: 0.7;
+  box-shadow: none;
 }
 
-.vehicle-item.selected {
-  border-color: var(--primary-blue);
+/* Specific styles for each state */
+.trip-toggle-btn.start-trip {
+  background: var(--op-primary);
+  box-shadow: 0 4px 20px rgba(0, 122, 255, 0.3);
+  animation: pulse 2s infinite;
+}
+.trip-toggle-btn.end-trip {
+  background: var(--op-danger);
+  box-shadow: 0 4px 20px rgba(255, 59, 48, 0.3);
+}
+.trip-toggle-btn.end-trip:hover .material-icons {
+  transform: rotate(90deg);
 }
 
-.vehicle-icon {
-  color: var(--text-light);
-  font-size: 24px;
-}
-
-.vehicle-details {
-  flex-grow: 1;
-}
-
-.vehicle-name {
-  font-weight: 500;
-  color: var(--text-dark);
-  display: block;
-}
-
-.status {
-  font-size: 0.9rem;
-}
-
-.status.on-time {
-  color: var(--status-green);
-}
-
-.status.delayed {
-  color: var(--status-red);
-}
-
-/* --- Custom Radio Button --- */
-.vehicle-radio {
-  display: none; /* Hide the default radio button */
-}
-
-.custom-radio {
-  width: 24px;
-  height: 24px;
-  border: 2px solid var(--border-color);
-  border-radius: 50%;
-  display: inline-block;
-  position: relative;
-  transition: border-color 0.2s ease;
-}
-
-.vehicle-item.selected .custom-radio {
-  border-color: var(--primary-blue);
-}
-
-.vehicle-item.selected .custom-radio::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 14px;
-  height: 14px;
-  background-color: var(--primary-blue);
-  border-radius: 50%;
-}
-
-
-/* --- Action Banner & Bottom Nav --- */
-.action-banner {
-  position: fixed;
-  bottom: 65px; /* Sits just above the bottom nav */
-  left: 0;
-  width: 100%;
-  background-color: var(--warning-yellow-bg);
-  color: var(--warning-yellow-text);
-  padding: 0.75rem 1.5rem;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  z-index: 100;
-}
-
-.operator-bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  display: flex;
-  justify-content: space-around;
-  background: var(--card-bg);
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-  z-index: 100;
-  padding: 0.5rem 0;
-}
-
-.operator-bottom-nav .nav-item {
+/* --- 7. Dynamic States (Loading, Error, No Assignment) --- */
+.status-container { text-align: center; padding: 2rem; }
+.no-assignment-container {
   display: flex;
   flex-direction: column;
   align-items: center;
-  text-decoration: none;
-  color: var(--text-light);
-  font-size: 0.75rem;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem;
+  height: calc(100vh - 10rem);
+  animation: fade-in-slide-up 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+.no-assignment-container .icon {
+  font-size: 3.5rem;
+  color: var(--op-primary);
+  padding: 1.5rem;
+  background-color: var(--op-card-bg);
+  border-radius: 50%;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--op-border-color);
+  box-shadow: var(--soft-shadow);
+}
+.no-assignment-container h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--op-text-primary);
+  margin-bottom: 0.5rem;
+}
+.no-assignment-container p {
+  color: var(--op-text-secondary);
+  max-width: 350px;
 }
 
-.operator-bottom-nav .nav-item.active {
-  color: var(--primary-blue);
-  font-weight: 500;
+/* --- 8. Responsive --- */
+@media (max-width: 768px) {
+  .page-header {
+    margin-bottom: 1rem;
+    text-align: center; /* Center header on mobile */
+  }
+  .page-title { font-size: 1.6rem; }
+  .page-subtitle { font-size: 1rem; }
+
+  .map-wrapper {
+    height: 35vh; /* Reduce height slightly */
+    min-height: 250px; /* Reduce min-height */
+  }
+  
+  .trip-controls {
+    grid-template-columns: 1fr; /* Stack controls vertically */
+    text-align: center;
+    padding: 1rem; /* Reduce padding */
+    gap: 1rem; /* Reduce gap */
+  }
+
+  .route-details .route-path {
+    justify-content: center;
+    font-size: 1.1rem; /* Slightly smaller font for the route path */
+  }
+
+  .trip-toggle-btn {
+    width: 100%;
+    padding: 0.8rem 1.5rem; /* Reduce button padding */
+    font-size: 0.9rem; /* Smaller font on button */
+  }
+
+  /* Responsive styling for the 'No Assignment' state */
+  .no-assignment-container {
+    padding: 1rem;
+    height: auto; /* Allow it to take natural height */
+  }
+  .no-assignment-container h2 {
+    font-size: 1.2rem;
+  }
 }

@@ -9,7 +9,6 @@ const AdminLayout = ({ children }) => {
   const navigate = useNavigate();
   const currentPath = location.pathname;
 
-  // --- NEW STATE FOR NOTIFICATIONS ---
   const [reports, setReports] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showReplyModal, setShowReplyModal] = useState(false);
@@ -17,7 +16,6 @@ const AdminLayout = ({ children }) => {
   const [replyText, setReplyText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Fetch reports when the component mounts
   useEffect(() => {
     const fetchReports = async () => {
       try {
@@ -51,7 +49,7 @@ const AdminLayout = ({ children }) => {
   const handleOpenReplyModal = (report) => {
     setSelectedReport(report);
     setShowReplyModal(true);
-    setShowNotifications(false); // Close dropdown when modal opens
+    setShowNotifications(false);
   };
 
   const handleReplySubmit = async () => {
@@ -63,7 +61,6 @@ const AdminLayout = ({ children }) => {
         { message: replyText },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      // Update the report in the main list and close modal
       setReports(reports.map(r => r._id === selectedReport._id ? res.data : r));
       setShowReplyModal(false);
       setReplyText("");
@@ -78,60 +75,58 @@ const AdminLayout = ({ children }) => {
   return (
     <div className="admin-layout animate-fade-in">
       <header className="admin-header">
-        <div className="header-brand">
-          <span className="material-icons">directions_bus</span>
-          <h1>TransitGo</h1>
-        </div>
-        <div className="header-actions">
-          {/* --- UPDATED NOTIFICATION BUTTON --- */}
-          <div className="notification-wrapper">
-            <button 
-              type="button" 
-              className="header-action-btn notification-btn" 
-              title="Notifications"
-              onClick={() => setShowNotifications(!showNotifications)}
-            >
-              <span className="material-icons">notifications</span>
-              {pendingReports.length > 0 && (
-                <span className="notification-badge">{pendingReports.length}</span>
-              )}
-            </button>
-
-            {/* --- NOTIFICATION DROPDOWN --- */}
-            {showNotifications && (
-              <div className="notification-dropdown">
-                <div className="dropdown-header">
-                  <h3>New Reports</h3>
+        {/* --- THIS IS THE ONLY CHANGE IN THIS FILE --- */}
+        {/* We wrap the brand and the new user cluster in a container for flexbox control */}
+        <div className="header-content">
+            <div className="header-brand">
+                <span className="material-icons">directions_bus</span>
+                <h1>TransitGo</h1>
+            </div>
+            {/* This new div groups the notification and user menu together */}
+            <div className="header-user-cluster">
+                <div className="notification-wrapper">
+                    <button 
+                        type="button" 
+                        className="header-action-btn notification-btn" 
+                        title="Notifications"
+                        onClick={() => setShowNotifications(!showNotifications)}
+                    >
+                        <span className="material-icons">notifications</span>
+                        {pendingReports.length > 0 && (
+                            <span className="notification-badge">{pendingReports.length}</span>
+                        )}
+                    </button>
+                    {showNotifications && (
+                        <div className="notification-dropdown">
+                            <div className="dropdown-header"><h3>New Reports</h3></div>
+                            {pendingReports.length > 0 ? (
+                                pendingReports.slice(0, 5).map(report => (
+                                    <div key={report._id} className="notification-item">
+                                        <div className="item-icon"><span className="material-icons">report</span></div>
+                                        <div className="item-content">
+                                            <p><strong>{report.passenger?.fullName || 'N/A'}</strong> reported an issue with vehicle <strong>{report.vehicle?.vehicleId || 'N/A'}</strong>.</p>
+                                            <small>{new Date(report.createdAt).toLocaleString()}</small>
+                                        </div>
+                                        <div className="item-actions">
+                                            <button className="btn-action-sm view" onClick={() => navigate('/admin/reports')}>View</button>
+                                            <button className="btn-action-sm reply" onClick={() => handleOpenReplyModal(report)}>Reply</button>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (<div className="empty-notification">No new reports.</div>)}
+                            <div className="dropdown-footer">
+                                <Link to="/admin/reports" onClick={() => setShowNotifications(false)}>View All Reports</Link>
+                            </div>
+                        </div>
+                    )}
                 </div>
-                {pendingReports.length > 0 ? (
-                  pendingReports.slice(0, 5).map(report => (
-                    <div key={report._id} className="notification-item">
-                      <div className="item-icon"><span className="material-icons">report</span></div>
-                      <div className="item-content">
-                        <p><strong>{report.passenger?.fullName || 'N/A'}</strong> reported an issue with vehicle <strong>{report.vehicle?.vehicleId || 'N/A'}</strong>.</p>
-                        <small>{new Date(report.createdAt).toLocaleString()}</small>
-                      </div>
-                      <div className="item-actions">
-                        <button className="btn-action-sm view" onClick={() => navigate('/admin/reports')}>View</button>
-                        <button className="btn-action-sm reply" onClick={() => handleOpenReplyModal(report)}>Reply</button>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="empty-notification">No new reports.</div>
-                )}
-                <div className="dropdown-footer">
-                  <Link to="/admin/reports" onClick={() => setShowNotifications(false)}>View All Reports</Link>
+                <div className="user-menu">
+                    <img src="https://i.pravatar.cc/150?img=3" alt="Admin" className="profile-pic" />
+                    <button type="button" onClick={handleLogout} className="header-action-btn" title="Logout">
+                        <span className="material-icons">logout</span>
+                    </button>
                 </div>
-              </div>
-            )}
-          </div>
-          <div className="user-menu">
-            <img src="https://i.pravatar.cc/150?img=3" alt="Admin" className="profile-pic" />
-            <button type="button" onClick={handleLogout} className="header-action-btn" title="Logout">
-              <span className="material-icons">logout</span>
-            </button>
-          </div>
+            </div>
         </div>
       </header>
       
@@ -152,11 +147,8 @@ const AdminLayout = ({ children }) => {
         ))}
       </footer>
       
-      {/* --- NEW: REPLY MODAL --- */}
       <Modal show={showReplyModal} onHide={() => setShowReplyModal(false)} centered>
-          <Modal.Header closeButton>
-              <Modal.Title>Reply to Report</Modal.Title>
-          </Modal.Header>
+          <Modal.Header closeButton><Modal.Title>Reply to Report</Modal.Title></Modal.Header>
           <Modal.Body>
               {selectedReport && (
                   <div className="report-summary">
@@ -167,13 +159,7 @@ const AdminLayout = ({ children }) => {
               )}
               <Form.Group>
                   <Form.Label>Your Reply</Form.Label>
-                  <Form.Control 
-                      as="textarea" 
-                      rows={4} 
-                      value={replyText} 
-                      onChange={(e) => setReplyText(e.target.value)}
-                      placeholder="Type your response to resolve this issue..."
-                  />
+                  <Form.Control as="textarea" rows={4} value={replyText} onChange={(e) => setReplyText(e.target.value)} placeholder="Type your response to resolve this issue..."/>
               </Form.Group>
           </Modal.Body>
           <Modal.Footer>

@@ -1,73 +1,66 @@
 import express from 'express';
-import Fare from '../models/Fares.js'; // Assumes Fare model exists and is correct
-import authMiddleware from '../middleware/authMiddleware.js'; // Recommended to protect routes
+import Route from '../models/Fares.js'; // Use the new Route model
+import authMiddleware from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// @route   POST api/fares
-// @desc    Create a new fare or route
+// @route   POST api/routes
+// @desc    Create a new route with stops
 // @access  Private (Admin)
 router.post('/', authMiddleware, async (req, res) => {
-  const { routeName, startPoint, endPoint, price } = req.body;
+  // Now accepts 'stops' array
+  const { routeName, startPoint, endPoint, price, stops } = req.body;
 
-  // Basic validation
-  if (!routeName || !startPoint || !endPoint || !price) {
-    return res.status(400).json({ msg: 'Please enter all fields.' });
+  if (!routeName || !startPoint || !endPoint || !price || !stops) {
+    return res.status(400).json({ msg: 'Please enter all fields, including stops.' });
   }
 
   try {
-    const newFare = new Fare({
+    const newRoute = new Route({
       routeName,
       startPoint,
       endPoint,
       price,
+      stops,
     });
 
-    const fare = await newFare.save();
-    res.status(201).json(fare); // Respond with the newly created fare
+    const route = await newRoute.save();
+    res.status(201).json(route);
 
   } catch (err) {
-    console.error("Error creating fare:", err.message);
+    console.error("Error creating route:", err.message);
     res.status(500).send('Server Error');
   }
 });
 
-// @route   GET api/fares
-// @desc    Get all fares
+// @route   GET api/routes
+// @desc    Get all routes
 // @access  Private (Authenticated Users)
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    // Find all fares and sort them by the creation date in descending order (newest first)
-    const fares = await Fare.find().sort({ creationDate: -1 });
-    res.json(fares);
+    const routes = await Route.find().sort({ creationDate: -1 });
+    res.json(routes);
   } catch (err) {
-    console.error("Error fetching fares:", err.message);
+    console.error("Error fetching routes:", err.message);
     res.status(500).send('Server Error');
   }
 });
 
-// @route   DELETE api/fares/:id
-// @desc    Delete a fare by its ID
+// @route   DELETE api/routes/:id
+// @desc    Delete a route by its ID
 // @access  Private (Admin)
 router.delete('/:id', authMiddleware, async (req, res) => {
     try {
-        const fare = await Fare.findById(req.params.id);
-
-        // Check if the fare exists
-        if (!fare) {
-            return res.status(404).json({ msg: 'Fare not found' });
+        const route = await Route.findById(req.params.id);
+        if (!route) {
+            return res.status(404).json({ msg: 'Route not found' });
         }
-
-        // Remove the fare from the database
-        await Fare.findByIdAndDelete(req.params.id);
-
-        res.json({ msg: 'Fare removed successfully' });
-
+        await Route.findByIdAndDelete(req.params.id);
+        res.json({ msg: 'Route removed successfully' });
     } catch (err) {
-        console.error("Error deleting fare:", err.message);
-        // Check for invalid ID format (e.g., /api/fares/invalid-id)
+        console.error("Error deleting route:", err.message);
         if (err.kind === 'ObjectId') {
-            return res.status(404).json({ msg: 'Fare not found' });
+            return res.status(404).json({ msg: 'Route not found' });
         }
         res.status(500).send('Server Error');
     }

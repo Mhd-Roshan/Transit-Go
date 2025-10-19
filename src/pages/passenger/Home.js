@@ -1,247 +1,262 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { Modal, Spinner } from 'react-bootstrap';
+import { Modal, Spinner, Alert } from 'react-bootstrap';
 import QrScanner from '../../components/QrScanner';
 import PassengerLayout from '../../layouts/PassengerLayout';
 import '../../styles/home.css';
 
+// A centralized API instance for making requests with the auth token
+const API = axios.create({ baseURL: 'http://localhost:5000' });
+API.interceptors.request.use((req) => {
+  if (localStorage.getItem('token')) {
+    req.headers.Authorization = `Bearer ${localStorage.getItem('token')}`;
+  }
+  return req;
+});
+
+// Helper function to check if the pending trip has expired
+const isTripExpired = (createdAt) => {
+    if (!createdAt) return false;
+    const deadline = new Date(createdAt).getTime() + 24 * 60 * 60 * 1000; // 24 hours
+    return new Date().getTime() > deadline;
+};
+
 function HomePage() {
   const navigate = useNavigate();
   const [balance, setBalance] = useState(0);
-  const [loadingBalance, setLoadingBalance] = useState(true);
-  const [balanceError, setBalanceError] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(''); // For general page errors
   const [upcomingBuses, setUpcomingBuses] = useState([]);
-  const [busesError, setBusesError] = useState('');
-  const [destination, setDestination] = useState("");
-  const [loadingFare, setLoadingFare] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
-  const [activeTab, setActiveTab] = useState('search');
+  const [hasExpiredDue, setHasExpiredDue] = useState(false);
 
-  // State for the post-scan payment modal
+  // State specifically for the payment modal
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [scannedVehicleId, setScannedVehicleId] = useState(null);
   const [destinationInModal, setDestinationInModal] = useState("");
-  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-  const [paymentResult, setPaymentResult] = useState({ status: '', message: '' });
+  const [fareAmount, setFareAmount] = useState(null); // State to hold the calculated fare
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentResult, setPaymentResult] = useState({ status: null, message: '' });
+  const [modalError, setModalError] = useState('');
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const storedTripJSON = localStorage.getItem('pendingTrip');
+    if (storedTripJSON) {
+        const storedTrip = JSON.parse(storedTripJSON);
+        if (isTripExpired(storedTrip.createdAt)) {
+            setHasExpiredDue(true);
+        }
+    }
 
-    const fetchWalletBalance = async () => {
-      setLoadingBalance(true);
-      setBalanceError('');
-      try {
-        const res = await axios.get("http://localhost:5000/api/payments/balance", { headers: { Authorization: `Bearer ${token}` } });
-        setBalance(res.data.balance);
-      } catch (err) {
-        setBalanceError('Unable to load wallet.');
-      } finally {
-        setLoadingBalance(false);
-      }
-    };
-
-    const fetchUpcomingBuses = async () => {
-        setBusesError('');
+    const fetchAllData = async () => {
+        setLoading(true);
+        setError('');
         try {
-            const res = await axios.get("http://localhost:5000/api/assignments/active", {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setUpcomingBuses(res.data.slice(0, 4));
+            const [balanceRes, busesRes] = await Promise.all([
+                API.get("/api/payments/balance"),
+                API.get("/api/assignments/active")
+            ]);
+            setBalance(balanceRes.data.balance);
+            setUpcomingBuses(busesRes.data.slice(0, 4));
         } catch (err) {
-            console.error("Failed to fetch upcoming buses.", err);
-            setBusesError('Unable to load upcoming buses.');
+            console.error("Failed to fetch home page data.", err);
+            setError('Could not load page data. Please try refreshing.');
+        } finally {
+            setLoading(false);
         }
     };
-
-    fetchWalletBalance();
-    fetchUpcomingBuses();
+    fetchAllData();
   }, []);
-  
-  const handleGetFare = async () => {
-    if (!destination) { alert("Please enter a destination."); return; }
-    setLoadingFare(true);
-    try {
-      const token = localStorage.getItem("token");
-      const res = await axios.post("http://localhost:5000/api/trips/calculate-fare", { destination }, { headers: { Authorization: `Bearer ${token}` } });
-      const pendingTrip = { destination, amount: res.data.amount };
-      localStorage.setItem('pendingTrip', JSON.stringify(pendingTrip));
-      navigate('/payment');
-    } catch (err) {
-      alert(err.response?.data?.msg || "Could not calculate fare.");
-    } finally {
-      setLoadingFare(false);
-    }
-  };
   
   const handleScanSuccess = (decodedText) => {
     setShowScanner(false);
+    setError(''); // Clear any previous page errors
     try {
-      let vehicleId = null;
-      if (decodedText.includes('vehicle=')) {
-        const urlParams = new URLSearchParams(decodedText.split('?')[1]);
-        vehicleId = urlParams.get('vehicle');
-      }
+      const params = new URLSearchParams(
+        decodedText.includes('?') ? decodedText.substring(decodedText.indexOf('?')) : decodedText
+      );
+      const vehicleId = params.get('vehicle');
 
       if (vehicleId) {
         setScannedVehicleId(vehicleId);
         setShowPaymentModal(true);
-        setDestinationInModal("");
-        setPaymentResult({ status: '', message: '' });
       } else {
-        setDestination(decodedText);
-        setActiveTab('search');
-        alert(`Scanned destination: ${decodedText}`);
+        setError(`Scanned QR code is not valid.`);
       }
     } catch (error) {
       console.error("Error processing QR Code:", error);
-      alert("Could not process the scanned QR Code.");
+      setError("Could not process the scanned QR Code. Please try again.");
     }
   };
 
-  const handleConfirmPayment = async () => {
+  // --- STEP 1 of payment: Calculate the fare ---
+  const handleCalculateFare = async () => {
     if (!destinationInModal) {
-      setPaymentResult({ status: 'error', message: 'Please enter a destination.' });
+      setModalError('Please enter a destination.');
       return;
     }
-    setIsProcessingPayment(true);
-    setPaymentResult({ status: '', message: '' });
-    const token = localStorage.getItem("token");
-    
+    setIsProcessing(true);
+    setModalError('');
     try {
-      // Step 1: Calculate Fare
-      const fareRes = await axios.post(
-        "http://localhost:5000/api/trips/calculate-fare",
-        { destination: destinationInModal },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      const fareAmount = fareRes.data.amount;
-
-      // Step 2: Charge the wallet
-      const chargeRes = await axios.post(
-        "http://localhost:5000/api/payments/charge",
-        {
-          amount: fareAmount,
-          description: `Trip to ${destinationInModal} (Vehicle ID: ...${scannedVehicleId.slice(-6)})`
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      
-      // --- THIS IS THE RESTORED/CRITICAL FIX ---
-      // Step 3: Save the trip to history AFTER payment is successful
-      await axios.post(
-        "http://localhost:5000/api/trips",
-        {
-          destination: destinationInModal,
-          fare: fareAmount
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      // Step 4: Handle UI success (only if all steps above succeeded)
-      setPaymentResult({ status: 'success', message: `${chargeRes.data.message} Fare: ₹${fareAmount}` });
-      setBalance(chargeRes.data.newBalance);
-
+      const { data } = await API.post("/api/trips/calculate-fare", { destination: destinationInModal });
+      setFareAmount(data.amount); // Show the fare to the user
     } catch (err) {
-      // Step 5: Catch ANY error from the process and show it to the user
-      const errorMessage = err.response?.data?.msg || "An unexpected error occurred. Your trip was not recorded.";
-      console.error("Payment or Trip Save Error:", err);
-      alert(`Error: ${errorMessage}`);
-      
+      setModalError(err.response?.data?.msg || "Could not calculate fare.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // --- STEP 2 of payment: Confirm and charge the user ---
+  const handleConfirmPayment = async () => {
+    setIsProcessing(true);
+    setModalError('');
+    try {
+      const { data: chargeData } = await API.post("/api/payments/charge", { 
+          amount: fareAmount, 
+          description: `Trip to ${destinationInModal}` 
+      });
+      await API.post("/api/trips", { 
+          destination: destinationInModal, 
+          fare: fareAmount 
+      });
+      setPaymentResult({ status: 'success', message: chargeData.message });
+      setBalance(chargeData.newBalance);
+    } catch (err) {
+      const errorMessage = err.response?.data?.msg || "An unexpected error occurred.";
       setPaymentResult({ status: 'error', message: errorMessage });
     } finally {
-      setIsProcessingPayment(false);
+      setIsProcessing(false);
     }
   };
 
   const closeModalAndReset = () => {
     setShowPaymentModal(false);
     setScannedVehicleId(null);
+    setDestinationInModal("");
+    setFareAmount(null);
+    setPaymentResult({ status: null, message: '' });
+    setModalError('');
   };
+
+  const renderModalContent = () => {
+    if (paymentResult.status) {
+      return (
+        <div className={`payment-result ${paymentResult.status}`}>
+          <span className="material-icons-outlined result-icon">
+            {paymentResult.status === 'success' ? 'check_circle' : 'error'}
+          </span>
+          <h4>{paymentResult.status === 'success' ? 'Payment Successful!' : 'Payment Failed'}</h4>
+          <p>{paymentResult.message}</p>
+          <button className="btn-fare" onClick={closeModalAndReset}>Close</button>
+        </div>
+      );
+    }
+
+    if (fareAmount !== null) {
+      return (
+        <div className="text-center">
+          <h4>Trip Fare: ₹{fareAmount.toFixed(2)}</h4>
+          <p>Your wallet balance is ₹{balance.toFixed(2)}</p>
+          {balance < fareAmount && <Alert variant="warning" className="mt-3">Insufficient balance. Please add money to your wallet.</Alert>}
+          <button className="btn-fare mt-3" onClick={handleConfirmPayment} disabled={isProcessing || balance < fareAmount}>
+            {isProcessing ? <Spinner as="span" size="sm" /> : "Confirm & Pay"}
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <>
+        <div className="vehicle-info-display">
+          <span className="material-icons-outlined">directions_bus</span>
+          <div>
+            <span>Vehicle Scanned</span>
+            <strong>ID: ...{scannedVehicleId?.slice(-6)}</strong>
+          </div>
+        </div>
+        <div className="input-group-creative">
+          <span className="material-icons-outlined">flag</span>
+          <input 
+            type="text" 
+            placeholder="Enter your destination" 
+            value={destinationInModal}
+            onChange={(e) => setDestinationInModal(e.target.value)}
+            disabled={isProcessing}
+          />
+        </div>
+        {modalError && <Alert variant="danger" className="mt-3">{modalError}</Alert>}
+        <button className="btn-fare" onClick={handleCalculateFare} disabled={isProcessing || !destinationInModal}>
+          {isProcessing ? <Spinner as="span" size="sm" /> : "Calculate Fare"}
+        </button>
+      </>
+    );
+  };
+
 
   return (
     <PassengerLayout>
       <div>
-        {/* The Greeting Banner has been removed */}
+        {error && <Alert variant="danger" onClose={() => setError('')} dismissible>{error}</Alert>}
+        
+        <section className="home-hero-grid animate-fade-in">
+            <div className="balance-card">
+              <span className="balance-label">Wallet Balance</span>
+              {loading ? <Spinner animation="border" variant="light" size="sm" /> : <h2 className="balance-amount">₹{balance.toLocaleString('en-IN', {minimumFractionDigits: 2})}</h2>}
+              <button className="btn-add-money" onClick={() => navigate('/payment')}><span className="material-icons-outlined">add_circle</span> Add Money</button>
+            </div>
 
-        <section className="balance-overview-section animate-fade-in">
-          <div className="balance-card">
-            <div className="balance-info">
-              <span className="balance-label">Your Wallet</span>
-              <h2 className="balance-amount">
-                {loadingBalance ? <Spinner animation="border" size="sm" /> : `₹${balance.toLocaleString('en-IN')}`}
-              </h2>
-              {balanceError && <small className="text-muted">{balanceError}</small>}
-            </div>
-            <button className="btn-add-money" onClick={() => navigate('/payment')}>
-              <span className="material-icons">add_circle</span> Add Money
-            </button>
-          </div>
-        </section>
-
-        <section className="trip-starter-section animate-fade-in" style={{ animationDelay: '100ms' }}>
-          <div className="trip-starter-card">
-            <div className="tab-nav">
-              <button className={`tab-btn ${activeTab === 'search' ? 'active' : ''}`} onClick={() => setActiveTab('search')}>
-                  <span className="material-icons-outlined">search</span> Search Destination
-              </button>
-              <button className={`tab-btn ${activeTab === 'scan' ? 'active' : ''}`} onClick={() => { setActiveTab('scan'); setShowScanner(true); }}>
-                  <span className="material-icons-outlined">qr_code_scanner</span> Scan & Pay
-              </button>
-            </div>
-            <div className="tab-content">
-              {activeTab === 'search' && (
-                <div className="search-tab-content animate-fade-in">
-                  <div className="input-group-creative">
-                    <span className="material-icons-outlined">location_on</span>
-                    <input type="text" value={destination} onChange={(e) => setDestination(e.target.value)} placeholder="Enter your destination" />
-                  </div>
-                  <button className="btn-fare" onClick={handleGetFare} disabled={loadingFare}>
-                    {loadingFare ? <Spinner as="span" size="sm" /> : "Find Bus & Pay"}
-                  </button>
+            {hasExpiredDue ? (
+              <div className="due-card">
+                <div className="due-icon"><span className="material-icons-outlined">error</span></div>
+                <div className="due-text">
+                    <h4>Payment Due</h4>
+                    <p>Your account is blocked. Please clear the due amount.</p>
                 </div>
-              )}
-              {activeTab === 'scan' && (
-                <div className="scan-tab-content animate-fade-in">
-                    <div className="scan-tab-icon">
-                        <span className="material-icons-outlined">qr_code_2</span>
-                    </div>
-                    <h4>Ready to Scan</h4>
-                    <p>Click the 'Scan & Pay' tab again to open your camera and scan a bus QR code.</p>
+                <button className="btn btn-danger" onClick={() => navigate('/payment')}>Clear Due</button>
+              </div>
+            ) : (
+              <div className="scan-pay-card" onClick={() => setShowScanner(true)}>
+                <div className="scan-pay-icon"><span className="material-icons-outlined">qr_code_scanner</span></div>
+                <div className="scan-pay-text">
+                    <h4>Scan & Pay</h4>
+                    <p>Tap to scan the QR code and start your trip.</p>
                 </div>
-              )}
-            </div>
-          </div>
+              </div>
+            )}
         </section>
         
         <section className="upcoming-buses-section animate-fade-in" style={{ animationDelay: '200ms' }}>
-            <h2 className="section-title">Upcoming Buses</h2>
-            <div className="bus-list">
-                {upcomingBuses.length > 0 ? upcomingBuses.map(bus => {
-                    if (!bus || !bus.vehicle) return null;
-                    const diffMinutes = Math.round((new Date(bus.departureTime) - new Date()) / 60000);
-                    const departsInText = diffMinutes <= 0 ? 'Departing' : `In ${diffMinutes} min`;
-                    return (
-                        <div key={bus._id} className="bus-card">
-                            <div className="bus-card-icon"><span className="material-icons-outlined">directions_bus</span></div>
-                            <div className="bus-card-details">
-                                <h4>{bus.vehicle?.model} ({bus.vehicle?.vehicleId})</h4>
-                                <p>To: <strong>{bus.vehicle?.destination}</strong></p>
-                            </div>
-                            <div className="bus-card-timing">
-                                <span className="departs-in">{departsInText}</span>
-                                <span className={`status-badge ${bus.status.toLowerCase().replace(' ', '-')}`}>{bus.status}</span>
-                            </div>
-                        </div>
-                    );
-                }) : (
-                  busesError ? <p className="no-buses-msg">{busesError}</p> : <p className="no-buses-msg">No active buses found. Check back later.</p>
-                )}
-            </div>
+          <h3 className="section-title">Upcoming Buses</h3>
+          {loading ? <div className="text-center p-3"><Spinner /></div> : (
+              <div className="bus-list">
+                  {upcomingBuses.length > 0 ? upcomingBuses.map(bus => {
+                      if (!bus || !bus.vehicle) return null;
+                      const diffMinutes = Math.round((new Date(bus.departureTime) - new Date()) / 60000);
+                      const departsInText = diffMinutes <= 0 ? 'Departing' : `In ${diffMinutes} min`;
+                      return (
+                          <div key={bus._id} className="bus-card">
+                              <div className="bus-card-icon"><span className="material-icons-outlined">directions_bus</span></div>
+                              <div className="bus-card-details">
+                                  <h4>{bus.vehicle?.model} ({bus.vehicle?.vehicleId})</h4>
+                                  <p>To: <strong>{bus.vehicle?.destination}</strong></p>
+                              </div>
+                              <div className="bus-card-timing">
+                                  <span className="departs-in">{departsInText}</span>
+                                  <span className={`status-badge ${bus.status.toLowerCase().replace(' ', '-')}`}>{bus.status}</span>
+                              </div>
+                          </div>
+                      );
+                  }) : (
+                    <p className="no-buses-msg">No active buses found.</p>
+                  )}
+              </div>
+          )}
         </section>
 
         <section className="quick-actions-section animate-fade-in" style={{ animationDelay: '300ms' }}>
-          <h2 className="section-title">More Actions</h2>
+          <h3 className="section-title">More Actions</h3>
           <div className="quick-actions">
             <div className="action-card" onClick={() => navigate('/timings')}><div className="action-icon book-icon"><span className="material-icons-outlined">schedule</span></div><h4>Schedules</h4><p>View all routes</p></div>
             <div className="action-card" onClick={() => navigate('/history')}><div className="action-icon book-icon"><span className="material-icons-outlined">history</span></div><h4>History</h4><p>See your trips</p></div>
@@ -258,44 +273,10 @@ function HomePage() {
 
         <Modal show={showPaymentModal} onHide={closeModalAndReset} centered backdrop="static">
           <Modal.Header closeButton>
-            <Modal.Title>Confirm Your Trip</Modal.Title>
+            <Modal.Title>{paymentResult.status ? 'Payment Status' : 'Confirm Your Trip'}</Modal.Title>
           </Modal.Header>
           <Modal.Body className="payment-modal-body">
-            {paymentResult.status ? (
-              <div className={`payment-result ${paymentResult.status}`}>
-                <span className="material-icons-outlined result-icon">
-                  {paymentResult.status === 'success' ? 'check_circle' : 'error'}
-                </span>
-                <h4>{paymentResult.status === 'success' ? 'Payment Successful!' : 'Payment Failed'}</h4>
-                <p>{paymentResult.message}</p>
-                <button className="btn-fare" onClick={closeModalAndReset}>Close</button>
-              </div>
-            ) : (
-              <>
-                <div className="vehicle-info-display">
-                  <span className="material-icons-outlined">directions_bus</span>
-                  <div>
-                    <span>Vehicle Scanned</span>
-                    <strong>ID: ...{scannedVehicleId?.slice(-6)}</strong>
-                  </div>
-                </div>
-
-                <div className="input-group-creative">
-                  <span className="material-icons-outlined">flag</span>
-                  <input 
-                    type="text" 
-                    placeholder="Enter your destination" 
-                    value={destinationInModal}
-                    onChange={(e) => setDestinationInModal(e.target.value)}
-                    disabled={isProcessingPayment}
-                  />
-                </div>
-
-                <button className="btn-fare" onClick={handleConfirmPayment} disabled={isProcessingPayment}>
-                  {isProcessingPayment ? <Spinner as="span" size="sm" /> : "Calculate Fare & Auto-Pay"}
-                </button>
-              </>
-            )}
+            {renderModalContent()}
           </Modal.Body>
         </Modal>
       </div>

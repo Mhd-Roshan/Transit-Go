@@ -8,9 +8,11 @@
   --passenger-card-bg: #ffffff;
   --passenger-text-primary: #263238;
   --passenger-text-secondary: #78909c;
-  --passenger-border-color: rgba(224, 224, 224, 0.5); /* Lighter for glass */
+  --passenger-border-color: rgba(224, 224, 224, 0.5);
   --passenger-glass-bg: rgba(255, 255, 255, 0.7);
   --passenger-hover-bg: rgba(0, 0, 0, 0.04);
+  --passenger-nav-hover: rgba(142, 142, 147, 0.12); /* Added for consistency */
+  --passenger-red: #ff3b30; /* Added for badge */
 }
 
 @media (prefers-color-scheme: dark) {
@@ -22,174 +24,99 @@
     --passenger-border-color: rgba(56, 56, 58, 0.7);
     --passenger-glass-bg: rgba(28, 28, 30, 0.75);
     --passenger-hover-bg: rgba(255, 255, 255, 0.08);
+    --passenger-nav-hover: rgba(152, 152, 157, 0.24);
   }
 }
 
 /* --- 2. Base Layout Shell (FIXED) --- */
 .passenger-layout {
-  display: flex;
-  flex-direction: column;
-  height: 100vh; /* Use height, not min-height */
-  background-color: var(--passenger-background);
-  font-family: 'Poppins', sans-serif;
-  /* Make the entire app container scrollable so the scrollbar sits at the viewport edge */
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  /* Styled scrollbar (WebKit) */
-  scrollbar-width: thin; /* Firefox */
-  scrollbar-color: rgba(30,136,229,0.75) rgba(0,0,0,0.06);
+  display: flex; flex-direction: column; height: 100vh;
+  background-color: var(--passenger-background); font-family: 'Poppins', sans-serif;
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin; scrollbar-color: rgba(30,136,229,0.75) rgba(0,0,0,0.06);
 }
-
-/* WebKit scrollbar styling for the overall app container */
-.passenger-layout::-webkit-scrollbar {
-  width: 12px;
-}
-.passenger-layout::-webkit-scrollbar-track {
-  background: transparent;
-}
-.passenger-layout::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, rgba(30,136,229,0.95), rgba(30,136,229,0.6));
-  border-radius: 999px;
-  border: 3px solid transparent; /* creates padding around thumb */
-  background-clip: padding-box;
-}
+.passenger-layout::-webkit-scrollbar { width: 12px; }
+.passenger-layout::-webkit-scrollbar-track { background: transparent; }
+.passenger-layout::-webkit-scrollbar-thumb { background: linear-gradient(180deg, rgba(30,136,229,0.95), rgba(30,136,229,0.6)); border-radius: 999px; border: 3px solid transparent; background-clip: padding-box; }
 .passenger-layout::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, rgba(30,136,229,1), rgba(30,136,229,0.8)); }
 
-/* --- 3. Main Content Area (NOW SCROLLABLE) --- */
+/* --- 3. Main Content Area --- */
 .passenger-main-scrollable {
-  flex-grow: 1; /* Allows the main content to fill available space */
-  /* Scrolling is handled by the outer .passenger-layout so ensure this area doesn't create nested scrollbars */
-  overflow: visible;
-  padding: 1rem;
-  width: 100%;
-  max-width: 768px; /* Max width for content on larger screens */
-  margin: 0 auto;
-  
-  /* Add padding to prevent content from being hidden by fixed nav/header */
-  padding-top: 5.5rem; 
-  padding-bottom: 5.5rem;
+  flex-grow: 1; overflow: visible; padding: 1rem; width: 100%;
+  max-width: 768px; margin: 0 auto;
+  padding-top: 5.5rem; padding-bottom: 5.5rem;
 }
 
-/* --- 4. FLOATING Header (Glassmorphism) --- */
+/* --- 4. FLOATING Header (REFINED STRUCTURE) --- */
 .passenger-header-glass {
-  position: fixed;
-  top: 1rem;
-  left: 1rem;
-  right: 1rem;
-  width: auto;
-  max-width: 500px;
-  margin: 0 auto;
-  z-index: 1000;
-  
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.5rem;
-  
-  background-color: var(--passenger-glass-bg);
-  backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
-  
-  border-radius: 99px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-  border: 1px solid var(--passenger-border-color);
+  position: fixed; top: 1rem; left: 1rem; right: 1rem; width: auto;
+  max-width: 768px; /* Wider for passenger view */
+  margin: 0 auto; z-index: 1000;
+  padding: 0.25rem;
+  background-color: var(--passenger-glass-bg); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+  border-radius: 99px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12); border: 1px solid var(--passenger-border-color);
 }
+.header-content { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+.header-brand { display: flex; align-items: center; gap: 0.75rem; color: var(--passenger-primary); padding-left: 1rem; }
+.header-brand h1 { font-size: 1.2rem; font-weight: 800; margin: 0; color: inherit; }
+
+.header-user-cluster {
+  display: flex; align-items: center; gap: 0.25rem;
+  background-color: var(--passenger-nav-hover); border-radius: 99px;
+  padding: 0.2rem; transition: background-color 0.2s ease;
+}
+.header-user-cluster:hover { background-color: var(--passenger-hover-bg); }
 
 .user-greeting {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 0 0.75rem 0 0.25rem;
 }
-.profile-pic {
-  width: 44px;
-  height: 44px;
-}
-.user-greeting span {
-  font-size: 0.85rem;
-  color: var(--passenger-text-secondary);
-}
-.user-greeting h3 {
-  font-size: 1.1rem;
-  font-weight: 600;
-  margin: 0;
-  color: var(--passenger-text-primary);
-}
+.profile-pic { width: 32px; height: 32px; }
+.user-greeting span { font-size: 0.8rem; color: var(--passenger-text-secondary); }
+.user-greeting h3 { font-size: 1rem; font-weight: 600; margin: 0; color: var(--passenger-text-primary); }
 
-.header-icon-btn {
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  color: var(--passenger-text-secondary);
-  width: 44px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  transition: all 0.2s ease;
+.header-action-btn {
+  background: transparent; border: none; cursor: pointer; color: var(--passenger-text-secondary);
+  width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; transition: all 0.2s ease;
 }
-.header-icon-btn:hover {
-  background-color: var(--passenger-hover-bg);
-  color: var(--passenger-primary);
-}
+.header-action-btn:hover { background-color: var(--passenger-hover-bg); color: var(--passenger-primary); }
 
+/* --- Notification Dropdown (Copied from Admin/Operator Layouts) --- */
+.notification-wrapper { position: relative; }
+.notification-badge { position: absolute; top: 6px; right: 6px; background-color: var(--passenger-red); color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 11px; font-weight: 600; display: flex; justify-content: center; align-items: center; border: 2px solid var(--passenger-card-bg); pointer-events: none; }
+.notification-dropdown { position: absolute; top: calc(100% + 10px); right: 0; width: 320px; background-color: var(--passenger-card-bg); border-radius: 1rem; border: 1px solid var(--passenger-border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.1); overflow: hidden; z-index: 1100; }
+.dropdown-header { padding: 0.75rem 1rem; border-bottom: 1px solid var(--passenger-border-color); }
+.dropdown-header h3 { margin: 0; font-size: 1rem; font-weight: 600; }
+.notification-item { display: grid; grid-template-columns: auto 1fr; gap: 1rem; padding: 1rem; cursor: pointer; border-bottom: 1px solid var(--passenger-border-color); }
+.notification-item:hover { background-color: var(--passenger-hover-bg); }
+.item-icon { width: 36px; height: 36px; flex-shrink: 0; background-color: var(--passenger-background); color: var(--passenger-primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.item-content p { margin: 0; font-size: 0.9rem; line-height: 1.4; color: var(--passenger-text-primary); }
+.item-content small { color: var(--passenger-text-secondary); font-size: 0.8rem; }
+.empty-notification { padding: 2rem 1rem; text-align: center; color: var(--passenger-text-secondary); }
 
 /* --- 5. FLOATING Bottom Navigation (Glassmorphism) --- */
 .passenger-bottom-nav-glass {
-  position: fixed;
-  bottom: 1rem;
-  left: 1rem;
-  right: 1rem;
-  width: auto;
-  max-width: 500px;
-  margin: 0 auto;
-  z-index: 1000;
-
-  display: flex;
-  justify-content: space-around;
-  
-  background-color: var(--passenger-glass-bg);
-  backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
-  
-  border-radius: 99px;
-  padding: 0.5rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-  border: 1px solid var(--passenger-border-color);
+  position: fixed; bottom: 1rem; left: 1rem; right: 1rem; width: auto;
+  max-width: 500px; margin: 0 auto; z-index: 1000;
+  display: flex; justify-content: space-around;
+  background-color: var(--passenger-glass-bg); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+  border-radius: 99px; padding: 0.5rem; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15); border: 1px solid var(--passenger-border-color);
 }
-
 .passenger-bottom-nav-glass .nav-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
-  color: var(--passenger-text-secondary);
-  font-size: 11px;
-  font-weight: 600;
-  border-radius: 99px;
-  width: 60px;
-  height: 50px;
-  transition: all 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; text-decoration: none;
+  color: var(--passenger-text-secondary); font-size: 11px; font-weight: 600;
+  border-radius: 99px; width: 60px; height: 50px; transition: all 0.25s cubic-bezier(0.25, 1, 0.5, 1);
 }
+.passenger-bottom-nav-glass .nav-item .material-icons { font-size: 22px; }
+.passenger-bottom-nav-glass .nav-item .nav-label { margin-top: 3px; font-size: 0.7rem; }
+.passenger-bottom-nav-glass .nav-item:not(.active):hover { color: var(--passenger-text-primary); background-color: var(--passenger-hover-bg); transform: translateY(-2px); }
+.passenger-bottom-nav-glass .nav-item.active { background-color: var(--passenger-primary); color: #fff; transform: translateY(-2px); box-shadow: 0 4px 15px rgba(30, 136, 229, 0.3); }
 
-.passenger-bottom-nav-glass .nav-item .material-icons {
-  font-size: 22px;
-}
-.passenger-bottom-nav-glass .nav-item .nav-label {
-  margin-top: 3px;
-  font-size: 0.7rem;
-}
-
-.passenger-bottom-nav-glass .nav-item:not(.active):hover {
-  color: var(--passenger-text-primary);
-  background-color: var(--passenger-hover-bg);
-  transform: translateY(-2px);
-}
-
-.passenger-bottom-nav-glass .nav-item.active {
-  background-color: var(--passenger-primary);
-  color: #fff;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(30, 136, 229, 0.3);
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .header-brand h1 { display: none; } /* Hide text logo on small screens */
+  .user-greeting h3, .user-greeting span { display: none; } /* Hide greeting text, only show avatar */
+  .user-greeting { padding-right: 0.25rem; }
+  .notification-dropdown { width: 90vw; }
 }

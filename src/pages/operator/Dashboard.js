@@ -4,9 +4,9 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Card, Spinner, Alert } from "react-bootstrap";
 import QRCode from "react-qr-code";
-import { BsCheckCircleFill } from "react-icons/bs"; // Restored this import
+import { BsCheckCircleFill } from "react-icons/bs";
 import OperatorLayout from "../../layouts/OperatorLayout";
-import { useTrip } from "../../context/TripContext"; // Restored this import
+import { useTrip } from "../../context/TripContext";
 import "../../styles/opdashboard.css";
 
 const Dashboard = () => {
@@ -14,11 +14,14 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [liveEarnings, setLiveEarnings] = useState(0);
+  // --- NEW: State for simulated passenger count ---
+  const [simulatedPassengers, setSimulatedPassengers] = useState(0);
 
-  // --- RESTORED: Getting trip state from context ---
   const { completedStops, isTripActive } = useTrip();
+  
+  // --- NEW: Daily goal for the progress bar ---
+  const DAILY_GOAL = 5000;
 
-  // --- RESTORED: Schedule data for the tracker ---
   const schedule = [
     { time: "8:00 AM", location: "Start Point" },
     { time: "8:15 AM", location: "City Park" },
@@ -59,31 +62,34 @@ const Dashboard = () => {
     fetchAssignment();
   }, []);
 
+  // --- UPDATED: Simulation now also counts passengers ---
   useEffect(() => {
     let intervalId = null;
-    // Only run earnings simulation when an assignment exists and a trip is active
     if (assignment && isTripActive) {
       intervalId = setInterval(() => {
         setLiveEarnings(prevEarnings => {
-          // If we've already reached the cap, keep it capped
-          const CAP = 4000;
+          const CAP = DAILY_GOAL + 500; // Allow going slightly over goal
           if (prevEarnings >= CAP) return CAP;
           const newFare = Math.random() * (150 - 20) + 20;
           const updated = prevEarnings + newFare;
+          // Increment passengers when fare is collected
+          setSimulatedPassengers(p => p + Math.floor(Math.random() * 3) + 1);
           return updated >= CAP ? CAP : updated;
         });
       }, 8000);
     }
-
     return () => { if (intervalId) clearInterval(intervalId); };
   }, [assignment, isTripActive]);
 
-  // Ensure live fare starts at ₹0 when a trip begins; keep cap enforced by the interval
+  // --- UPDATED: Reset both earnings and passengers on trip start ---
   useEffect(() => {
     if (isTripActive && assignment) {
       setLiveEarnings(0);
+      setSimulatedPassengers(0);
     }
   }, [isTripActive, assignment]);
+  
+  const earningsProgress = (liveEarnings / DAILY_GOAL) * 100;
 
   const renderContent = () => {
     if (loading) {
@@ -91,73 +97,94 @@ const Dashboard = () => {
     }
     
     if (error) {
-       return <div className="status-container"><Alert variant="danger">{error}</Alert></div>
+       return <div className="status-container"><Alert variant="danger">{error}</Alert></div>;
+    }
+
+    // --- NEW: Render a full-page "No Assignment" state ---
+    if (!assignment || !assignment.vehicle) {
+        return (
+            <div className="no-assignment-container">
+                <span className="material-icons icon">no_transfer</span>
+                <h2>No Vehicle Assigned</h2>
+                <p>You cannot start a trip or collect fares until an administrator assigns a vehicle to you.</p>
+            </div>
+        );
     }
 
     return (
       <>
-        {/* Card 1: Live Fare Collection */}
+        {/* --- Card 1: Redesigned Live Trip Status Card --- */}
         <Card className="dashboard-card" style={{ animationDelay: '100ms' }}>
           <Card.Body>
-            <Card.Title>Live Fare Collection</Card.Title>
-            {assignment && assignment.vehicle ? (
-              <div className="vehicle-details-grid">
-                <div className="vehicle-info">
-                  <p className="vehicle-id">{assignment.vehicle.vehicleId}</p>
-                  <p className="vehicle-model">
-                    Use this QR code for passenger payments.
-                  </p>
-                  <div className="collection-display mt-3">
-                    <span className="collection-time">Live Earnings (Simulated)</span>
-                    <span className="collection-amount text-success">
-                        ₹{liveEarnings.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </span>
-                  </div>
+            <div className="vehicle-details-grid">
+              {/* Left Side: Details */}
+              <div className="vehicle-info">
+                <p className="vehicle-id">{assignment.vehicle.vehicleId}</p>
+                <p className="vehicle-model">{assignment.vehicle.model}</p>
+                
+                <div className="earnings-section">
+                    <p className="earnings-label">Live Earnings (Simulated)</p>
+                    <h3 className="earnings-amount">₹{liveEarnings.toLocaleString('en-IN')}</h3>
+                    <div className="earnings-progress">
+                        <div className="earnings-progress-bar" style={{ width: `${Math.min(earningsProgress, 100)}%` }}></div>
+                    </div>
                 </div>
-                <div className="qr-code-container">
-                  <div className="qr-code-wrapper">
-                    <QRCode
-                      value={`/pay?vehicle=${assignment.vehicle._id}`}
-                      size={128}
-                      viewBox={`0 0 128 128`}
-                    />
-                  </div>
+
+                <div className="summary-grid">
+                    <div className="summary-item">
+                        <p className="summary-value">
+                            <span className="material-icons">hail</span>
+                            {simulatedPassengers}
+                        </p>
+                        <p className="summary-label">Passengers</p>
+                    </div>
+                    <div className="summary-item">
+                        <p className="summary-value">
+                            <span className="material-icons">tour</span>
+                            {completedStops.size} / {schedule.length}
+                        </p>
+                        <p className="summary-label">Stops Completed</p>
+                    </div>
+                    <div className="summary-item">
+                        <p className="summary-value">
+                            <span className={`status-badge ${isTripActive ? 'active' : 'inactive'}`}>
+                                {isTripActive ? 'Active' : 'Inactive'}
+                            </span>
+                        </p>
+                        <p className="summary-label">Trip Status</p>
+                    </div>
+                </div>
+
+              </div>
+              {/* Right Side: QR Code */}
+              <div className="qr-code-container">
+                <div className="qr-code-wrapper">
+                  <QRCode value={`/pay?vehicle=${assignment.vehicle._id}`} size={128} viewBox={`0 0 128 128`} />
                 </div>
               </div>
-            ) : (
-              <div className="text-center p-3">
-                 <span className="material-icons" style={{fontSize: '48px', color: 'var(--op-text-secondary)'}}>no_transfer</span>
-                 <h5 className="mt-3">No Vehicle Assigned</h5>
-                 <p className="no-collection-msg">
-                   You cannot collect fares because you have not been assigned a vehicle. Please contact an administrator.
-                 </p>
-              </div>
-            )}
+            </div>
           </Card.Body>
         </Card>
 
-        {/* --- RESTORED: Schedule Tracker Card --- */}
-        {/* This card will only be displayed if an assignment exists */}
-        {assignment && (
-          <Card className="dashboard-card" style={{ animationDelay: '200ms' }}>
-            <Card.Body>
-              <Card.Title>Schedule Tracker</Card.Title>
-              <div className="schedule-timeline">
-                {schedule.map((item, index) => (
-                  <div key={index} className={`schedule-item ${completedStops.has(index) ? 'completed' : ''}`}>
-                    <div className="schedule-details">
-                      <p className="schedule-time m-0">{item.time}</p>
-                      <p className="schedule-location m-0">{item.location}</p>
-                    </div>
-                    {completedStops.has(index) && (
-                      <BsCheckCircleFill className="completed-icon" />
-                    )}
+        {/* --- Card 2: Schedule Tracker Card --- */}
+        <Card className="dashboard-card" style={{ animationDelay: '200ms' }}>
+          <Card.Body>
+            <Card.Title>Schedule Tracker</Card.Title>
+            <div className="schedule-timeline">
+              {schedule.map((item, index) => (
+                <div key={index} className={`schedule-item ${completedStops.has(index) ? 'completed' : ''}`}>
+                  <div className="schedule-details">
+                    <p className="schedule-time m-0">{item.time}</p>
+                    <p className="schedule-location m-0">{item.location}</p>
                   </div>
-                ))}
-              </div>
-            </Card.Body>
-          </Card>
-        )}
+                  {completedStops.has(index) && (
+                    <BsCheckCircleFill className="completed-icon" />
+                  )}
+                </div>
+              ))}
+            </div>
+          </Card.Body>
+        </Card>
       </>
     );
   };

@@ -50,7 +50,6 @@ label {
   color: #ddd; 
 }
 
-/* Base style for ALL input wrappers */
 .input-wrapper {
   background: rgba(255, 255, 255, 0.2);
   border: 1px solid rgba(255, 255, 255, 0.3);
@@ -59,14 +58,13 @@ label {
   align-items: stretch;
   transition: all 0.2s ease;
   overflow: hidden;
-  margin-bottom: 15px; /* Spacing between fields */
+  margin-bottom: 15px;
 }
 .input-wrapper:focus-within {
   border-color: #fff;
   background: rgba(255, 255, 255, 0.3);
 }
 
-/* Base style for ALL form controls */
 .form-control {
   background: transparent !important;
   border: none !important;
@@ -98,12 +96,10 @@ label {
   color: #fff; 
 }
 
-/* Specific styles for the password wrapper to position the icon */
 .password-wrapper {
   position: relative;
 }
 .password-wrapper .form-control {
-  /* Add padding to prevent text from overlapping with the icon */
   padding-right: 45px !important;
 }
 .password-toggle-icon {
@@ -166,4 +162,21 @@ label {
 }
 .signup a:hover { 
   text-decoration: underline; 
+}
+
+/* --- NEW: Mobile Responsiveness --- */
+@media (max-width: 480px) {
+  .login-card {
+    padding: 30px 20px; /* Reduce padding on small screens */
+  }
+  .brand {
+    font-size: 1.8rem; /* Slightly smaller brand name */
+  }
+  .welcome {
+    font-size: 1.2rem;
+  }
+  .subtitle {
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+  }
 }

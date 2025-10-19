@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react"; 
 import axios from "axios";
 import AdminLayout from "../../layouts/AdminLayout";
 import "../../styles/fares.css"; 
@@ -77,28 +77,28 @@ function Faresmgt() {
     <AdminLayout>
       <div className="fare-management-page animate-fade-in">
         <h2 className="page-title">Revenue Report</h2>
-        <p className="page-subtitle">Review passenger payments and operator cash collections.</p>
+        <p className="page-subtitle">Review passenger trip payments and operator cash collections.</p>
         
         <div className="filter-card">
           <div className="filter-grid">
             <div className="form-group">
               <label htmlFor="startDate">Start Date</label>
-              <input type="date" name="startDate" value={filters.startDate} onChange={handleFilterChange} />
+              <input type="date" id="startDate" name="startDate" value={filters.startDate} onChange={handleFilterChange} />
             </div>
             <div className="form-group">
               <label htmlFor="endDate">End Date</label>
-              <input type="date" name="endDate" value={filters.endDate} onChange={handleFilterChange} />
+              <input type="date" id="endDate" name="endDate" value={filters.endDate} onChange={handleFilterChange} />
             </div>
             <div className="form-group">
               <label htmlFor="vehicleId">Filter by Vehicle</label>
-              <select name="vehicleId" value={filters.vehicleId} onChange={handleFilterChange}>
+              <select id="vehicleId" name="vehicleId" value={filters.vehicleId} onChange={handleFilterChange}>
                 <option value="">All Vehicles</option>
                 {allVehicles.map(v => <option key={v._id} value={v._id}>{v.vehicleId} - {v.model}</option>)}
               </select>
             </div>
             <div className="form-group">
               <label htmlFor="operatorId">Filter by Operator</label>
-              <select name="operatorId" value={filters.operatorId} onChange={handleFilterChange}>
+              <select id="operatorId" name="operatorId" value={filters.operatorId} onChange={handleFilterChange}>
                 <option value="">All Operators</option>
                 {allOperators.map(op => <option key={op._id} value={op._id}>{op.fullName}</option>)}
               </select>
@@ -107,9 +107,11 @@ function Faresmgt() {
           <div className="filter-actions">
             <div className="revenue-total">
               <span className="total-label">Filtered Revenue</span>
-              <span className="total-amount">₹{totalFilteredRevenue.toLocaleString('en-IN')}</span>
+              <span className="total-amount">₹{totalFilteredRevenue.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
             </div>
-            <button className="reset-btn" onClick={resetFilters}>Reset Filters</button>
+            <button className="reset-btn" onClick={resetFilters}>
+              <span className="material-icons">refresh</span> Reset Filters
+            </button>
           </div>
         </div>
 
@@ -126,36 +128,35 @@ function Faresmgt() {
           </div>
         ) : (
           <div className="collections-list">
-            {reportData.map((item, index) => (
-              <div key={item._id} className="collection-card" style={{ animationDelay: `${index * 50}ms` }}>
-                <div className="collection-info">
-                  <p className="vehicle-id">{item.description}</p>
-                  <div className="sub-details">
-                    <p>
-                      <span className="material-icons">
-                        {item.type === 'Passenger Payment' ? 'person' : 'engineering'}
-                      </span>
-                      {item.userName || "N/A"}
-                    </p>
-                    {item.vehicleId && (
-                        <p>
-                            <span className="material-icons">directions_bus</span>
-                            {item.vehicleId}
-                        </p>
-                    )}
-                    <p>
-                      <span className="material-icons">event</span>
-                      {new Date(item.date).toLocaleString('en-GB')}
+            {/* --- REDESIGNED CARD RENDER --- */}
+            {reportData.map((item, index) => {
+              const isPayment = item.type === 'Passenger Payment';
+              return (
+                <div 
+                  key={item._id} 
+                  className={`collection-card ${isPayment ? 'passenger-payment' : 'operator-collection'}`} 
+                  style={{ animationDelay: `${index * 50}ms` }}
+                >
+                  <div className="collection-card-icon">
+                    <span className="material-icons">
+                      {isPayment ? 'credit_card' : 'payments'}
+                    </span>
+                  </div>
+                  <div className="collection-info">
+                    <p className="main-detail">{item.description}</p>
+                    <p className="sub-detail">
+                      {item.userName || 'N/A'}
+                      {item.vehicleId && ` • Vehicle: ${item.vehicleId}`}
+                      {' • '}
+                      {new Date(item.date).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     </p>
                   </div>
-                </div>
-                <div className="amount-section">
-                  <p className="collection-amount" style={{ color: item.type === 'Operator Collection' ? 'var(--admin-orange)' : 'var(--admin-primary)' }}>
+                  <div className="collection-amount">
                     ₹{item.amount.toLocaleString('en-IN')}
-                  </p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

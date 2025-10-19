@@ -101,15 +101,27 @@ function PaymentPage() {
     setError('');
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.post("http://localhost:5000/api/payments/charge",
+      const headers = { Authorization: `Bearer ${token}` };
+
+      // Step 1: Charge the user's wallet
+      const chargeRes = await axios.post("http://localhost:5000/api/payments/charge",
         { amount: pendingTrip.amount, description: `Trip to ${pendingTrip.destination}` },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers }
       );
-      setBalance(res.data.newBalance);
-      setTransactions(prev => [res.data.newTransaction, ...prev]);
+
+      // Step 2: If charge is successful, save the trip to history
+      await axios.post("http://localhost:5000/api/trips", {
+          destination: pendingTrip.destination,
+          fare: pendingTrip.amount
+      }, { headers });
+
+      // Step 3: Update UI state and clear pending trip from localStorage
+      setBalance(chargeRes.data.newBalance);
+      setTransactions(prev => [chargeRes.data.newTransaction, ...prev]);
       setPendingTrip(null);
       localStorage.removeItem('pendingTrip');
-      alert("Trip payment successful!");
+      alert("Trip payment successful! Your account is now active.");
+
     } catch (err) {
       setError(err.response?.data?.msg || "Payment failed.");
     } finally {
@@ -189,7 +201,7 @@ function PaymentPage() {
                   <div className={`pending-card ${timeLeft?.total <= 0 ? 'expired' : ''}`}>
                     <div className="pending-header">
                         <span className="material-icons-outlined">pending_actions</span>
-                        Pending Trip Payment
+                        {timeLeft?.total <= 0 ? 'Expired Payment Due' : 'Pending Trip Payment'}
                     </div>
                     <div className="pending-details">
                         <p>Trip to <strong>{pendingTrip.destination}</strong></p>
@@ -201,17 +213,17 @@ function PaymentPage() {
                             Time left to pay: <span>{timeLeft.hours}:{timeLeft.minutes}:{timeLeft.seconds}</span>
                         </div>
                     ) : (
-                        <div className="countdown-timer expired">Payment window has expired.</div>
+                        <div className="countdown-timer expired">Payment window has expired. Clear this due to proceed.</div>
                     )}
 
                     {balance >= pendingTrip.amount ? (
                       <Button 
                         className="pay-button" 
-                        variant="warning" 
+                        variant={timeLeft?.total <= 0 ? "danger" : "warning"}
                         onClick={handlePayTrip} 
-                        disabled={isProcessing || timeLeft?.total <= 0}
+                        disabled={isProcessing}
                       >
-                          {isProcessing ? <Spinner size="sm" /> : 'Pay Now from Wallet'}
+                          {isProcessing ? <Spinner size="sm" /> : (timeLeft?.total <= 0 ? 'Pay Due Amount Now' : 'Pay Now from Wallet')}
                       </Button>
                     ) : (
                       <div className="insufficient-balance-text">
@@ -223,7 +235,7 @@ function PaymentPage() {
                       <span className="material-icons-outlined">warning</span>
                       {timeLeft?.total > 0
                         ? "Payment must be completed within 24 hours to avoid a fine or account suspension."
-                        : "Please contact support to resolve this pending payment."
+                        : "Your account is currently blocked. You must clear this due."
                       }
                     </div>
                   </div>

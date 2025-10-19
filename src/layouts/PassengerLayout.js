@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Image } from 'react-bootstrap';
 import jwtDecode from 'jwt-decode';
-import axios from 'axios'; // Import axios for fetching reports
+import axios from 'axios';
 import '../styles/passengerLayout.css';
 
 const PassengerLayout = ({ children }) => {
@@ -10,10 +10,8 @@ const PassengerLayout = ({ children }) => {
   const location = useLocation();
   const isActive = (path) => location.pathname === path;
 
-  // --- NEW: State for notifications ---
   const [reports, setReports] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
-  // Simulate a 'read' status using local storage for persistence
   const [readReportIds, setReadReportIds] = useState(() => {
       try {
           const readIds = localStorage.getItem('readReportIds');
@@ -23,7 +21,6 @@ const PassengerLayout = ({ children }) => {
       }
   });
 
-  // This robust authentication check remains the same.
   const user = useMemo(() => {
     try {
       const token = localStorage.getItem("token");
@@ -45,7 +42,6 @@ const PassengerLayout = ({ children }) => {
     if (!user) {
       navigate('/login');
     } else {
-      // --- NEW: Fetch reports when user is authenticated ---
       const fetchReports = async () => {
         const token = localStorage.getItem("token");
         try {
@@ -74,15 +70,13 @@ const PassengerLayout = ({ children }) => {
     { path: '/report', icon: 'report', label: 'Report' }
   ];
 
-  // Filter for reports that have a reply and haven't been marked as read
   const unreadReports = reports.filter(r => r.status === 'Resolved' && r.reply?.message && !readReportIds.has(r._id));
 
-  // When a notification is clicked, mark it as read and navigate
   const handleNotificationClick = (reportId) => {
     const newReadIds = new Set(readReportIds).add(reportId);
     setReadReportIds(newReadIds);
     localStorage.setItem('readReportIds', JSON.stringify(Array.from(newReadIds)));
-    navigate('/report'); // Navigate to the report page to see the history
+    navigate('/report');
     setShowNotifications(false);
   };
 
@@ -92,22 +86,28 @@ const PassengerLayout = ({ children }) => {
 
   return (
     <div className="passenger-layout">
+      {/* --- THIS IS THE UPDATED HEADER STRUCTURE --- */}
       <header className="passenger-header-glass">
-        <div className="user-greeting">
-          <Image src={`https://i.pravatar.cc/150?u=${user.id}`} alt="User" className="profile-pic" roundedCircle />
-          <div>
-            <span>Welcome back,</span>
-            <h3>{user.name}</h3>
+        <div className="header-content">
+          <div className="header-brand">
+            <span className="material-icons">directions_bus</span>
+            <h1>TransitGo</h1>
           </div>
-        </div>
-        
-        {/* --- UPDATED HEADER ACTIONS WITH BELL ICON --- */}
-        <div className="header-actions">
+
+          <div className="header-user-cluster">
+            <div className="user-greeting">
+              <Image src={`https://i.pravatar.cc/150?u=${user.id}`} alt="User" className="profile-pic" roundedCircle />
+              <div>
+                <span>Welcome,</span>
+                <h3>{user.name.split(' ')[0]}</h3>
+              </div>
+            </div>
+            
             <div className="notification-wrapper">
                 <button 
                     type="button" 
                     onClick={() => setShowNotifications(!showNotifications)} 
-                    className="header-icon-btn" 
+                    className="header-action-btn" 
                     title="Notifications"
                 >
                     <span className="material-icons">notifications</span>
@@ -135,9 +135,10 @@ const PassengerLayout = ({ children }) => {
                     </div>
                 )}
             </div>
-            <button type="button" onClick={handleLogout} className="header-icon-btn" title="Logout">
+            <button type="button" onClick={handleLogout} className="header-action-btn" title="Logout">
               <span className="material-icons">logout</span>
             </button>
+          </div>
         </div>
       </header>
       

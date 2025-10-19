@@ -10,28 +10,44 @@ const router = express.Router();
 // @route   GET api/dashboard/revenue-report
 // @desc    Get a combined list of passenger payments and operator collections
 router.get('/revenue-report', authMiddleware, async (req, res) => {
-    // ... this route is correct and remains unchanged ...
     try {
         const { startDate, endDate, operatorId, vehicleId } = req.query;
         let combinedReport = [];
 
-        // --- Fetch Passenger Transactions ---
-        const transactionQuery = { amount: { $gt: 0 } };
+        // --- Fetch Passenger Trip Payments ---
+        // --- THIS IS THE FIX ---
+        // Fetch debit transactions (amount < 0), which represent trip payments.
+        const transactionQuery = { amount: { $lt: 0 } }; 
         if (startDate || endDate) {
             transactionQuery.createdAt = {};
             if (startDate) transactionQuery.createdAt.$gte = new Date(`${startDate}T00:00:00.000Z`);
             if (endDate) transactionQuery.createdAt.$lte = new Date(`${endDate}T23:59:59.999Z`);
         }
         
-        const transactions = await Transaction.find(transactionQuery).populate('user', 'fullName').populate({ path: 'trip', populate: { path: 'vehicle', select: 'vehicleId' } });
+        // Note: The 'trip' field is not consistently populated, so we filter by amount type.
+        // We populate user and trip->vehicle for additional details if available.
+        const transactions = await Transaction.find(transactionQuery)
+          .populate('user', 'fullName')
+          .populate({ 
+            path: 'trip', 
+            populate: { 
+              path: 'vehicle', 
+              select: 'vehicleId' 
+            } 
+          });
         
         transactions.forEach(tx => {
             const tripVehicleId = tx.trip?.vehicle?._id;
             if (vehicleId && (!tripVehicleId || tripVehicleId.toString() !== vehicleId)) return;
             
             combinedReport.push({
-                _id: tx._id, type: 'Passenger Payment', amount: tx.amount, date: tx.createdAt,
-                description: tx.description, userName: tx.user?.fullName, vehicleId: tx.trip?.vehicle?.vehicleId,
+                _id: tx._id, 
+                type: 'Passenger Payment', 
+                amount: Math.abs(tx.amount), // Use the absolute value for revenue display
+                date: tx.createdAt,
+                description: tx.description, 
+                userName: tx.user?.fullName, 
+                vehicleId: tx.trip?.vehicle?.vehicleId,
             });
         });
 
@@ -67,7 +83,6 @@ router.get('/revenue-report', authMiddleware, async (req, res) => {
 // @desc    Get key statistics for the admin dashboard
 router.get('/stats', authMiddleware, async (req, res) => {
   try {
-    // --- THIS IS THE CORRECTED LOGIC ---
     const [
       totalUsers,
       totalOperators,
@@ -79,13 +94,12 @@ router.get('/stats', authMiddleware, async (req, res) => {
       User.countDocuments(),
       User.countDocuments({ role: 'Operator' }),
       Vehicle.countDocuments(),
-      // 1. Get the sum of all operator collections
       Collection.aggregate([
         { $group: { _id: null, total: { $sum: '$amount' } } },
       ]),
-      // 2. Get the sum of all passenger payments and top-ups (credits)
+      // Get the sum of all passenger trip payments (debits)
       Transaction.aggregate([
-        { $match: { amount: { $gt: 0 } } }, // Only include positive amounts
+        { $match: { amount: { $lt: 0 } } }, 
         { $group: { _id: null, total: { $sum: '$amount' } } },
       ]),
       User.find()
@@ -94,21 +108,17 @@ router.get('/stats', authMiddleware, async (req, res) => {
         .select('fullName role createdAt'),
     ]);
 
-    // 3. Calculate the true total revenue by combining both sources
     const collectionRevenue = totalCollectionResult[0]?.total || 0;
-    const transactionRevenue = totalTransactionResult[0]?.total || 0;
+    // Transaction revenue is negative, so we take its absolute value
+    const transactionRevenue = Math.abs(totalTransactionResult[0]?.total || 0);
     const totalRevenue = collectionRevenue + transactionRevenue;
-
-    // FaresToday can also be a combination if you have digital payments today
-    // For simplicity, we'll keep it as collection-based for now.
-    // To include transactions, you'd add another aggregation here with a date filter.
     
     const stats = {
       totalUsers: totalUsers || 0,
       totalOperators: totalOperators || 0,
       totalVehicles: totalVehicles || 0,
-      faresToday: 0, // Placeholder, as this requires a separate daily aggregation
-      totalRevenue: totalRevenue, // Use the new combined total
+      faresToday: 0, 
+      totalRevenue: totalRevenue, 
       recentActivity: recentActivity || [],
     };
 

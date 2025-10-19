@@ -88,6 +88,7 @@ function UserManagementPage() {
       <div className="um-cards">
         {filteredUsers.map((user, index) => (
           <div className="um-card" key={user._id} style={{ animationDelay: `${index * 50}ms` }}>
+            {/* --- HEADER (Unchanged) --- */}
             <div className="um-card-header">
               <img src={`https://i.pravatar.cc/150?u=${user._id}`} alt="User Avatar" className="um-card-avatar" />
               <div className="um-card-info">
@@ -101,21 +102,37 @@ function UserManagementPage() {
               )}
             </div>
 
+            {/* --- NEW: CARD BODY WITH MORE DETAILS --- */}
+            <div className="um-card-body">
+                <div className="detail-item">
+                    <span className="material-icons detail-icon">email</span>
+                    <span>{user.email || 'No email provided'}</span>
+                </div>
+                <div className="detail-item">
+                    <span className="material-icons detail-icon">phone</span>
+                    <span>{user.phoneNumber || 'No phone provided'}</span>
+                </div>
+                <div className="detail-item">
+                    <span className="material-icons detail-icon">event</span>
+                    <span>Joined on {new Date(user.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                </div>
+            </div>
+
+            {/* --- FOOTER (Unchanged) --- */}
             {user.role === 'Operator' && (
               <div className="um-card-footer">
                 {user.status === 'Pending' ? (
                   <>
-                    <button className="btn icon-btn reject-icon" onClick={() => deleteUser(user._id)} title="Reject & Delete User">
+                    <button className="btn reject-icon" onClick={() => deleteUser(user._id)} title="Reject & Delete User">
                       <span className="material-icons">delete_forever</span>
                     </button>
-                    {/* --- THIS IS THE CHANGE --- */}
-                    {/* Changed the "Approve" button to also be a consistent icon button */}
-                    <button className="btn icon-btn approve-icon" onClick={() => updateStatus(user._id, 'Approved')} title="Approve Operator">
+                    <button className="btn approve-icon" onClick={() => updateStatus(user._id, 'Approved')} title="Approve Operator">
                       <span className="material-icons">check_circle</span>
+                      Approve
                     </button>
                   </>
                 ) : (
-                  <button className="btn icon-btn delete" onClick={() => deleteUser(user._id)} title="Delete Operator">
+                  <button className="btn delete" onClick={() => deleteUser(user._id)} title="Delete Operator">
                     <span className="material-icons">delete</span>
                   </button>
                 )}
