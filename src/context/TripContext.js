@@ -1,72 +1,94 @@
-// src/context/TripContext.js
-
 import React, { createContext, useState, useContext, useCallback, useRef } from 'react';
+import axios from 'axios';
 
 const TripContext = createContext();
 
-export const useTrip = () => {
-  return useContext(TripContext);
-};
+export const useTrip = () => useContext(TripContext);
+
+const fullSchedule = [
+    { time: "8:00 AM", location: "Adivaram (Start)" },
+    { time: "8:30 AM", location: "Lakkidi View Point" },
+    { time: "8:45 AM", location: "Vythiri" },
+    { time: "9:00 AM", location: "Chundale" },
+    { time: "9:15 AM", location: "Kalpetta Bus Stand" },
+    { time: "9:45 AM", location: "Meenangadi" },
+    { time: "10:15 AM", location: "Sulthan Bathery" },
+    { time: "10:45 AM", location: "Pazhassi Park" },
+    { time: "11:00 AM", location: "Pulpally (End Point)" },
+];
 
 export const TripProvider = ({ children }) => {
-  // State for the trip
   const [isTripActive, setIsTripActive] = useState(false);
   const [currentLeg, setCurrentLeg] = useState(0);
   const [currentBusPosition, setCurrentBusPosition] = useState(null);
   const [completedStops, setCompletedStops] = useState(new Set());
   const [selectedVehicle, setSelectedVehicle] = useState(null);
-  
-  // Refs to hold interval IDs for cleanup
+  const [tripSchedule, setTripSchedule] = useState([]);
+
+  const [assignment, setAssignment] = useState(null);
+  const [assignmentLoading, setAssignmentLoading] = useState(true);
+  const [assignmentError, setAssignmentError] = useState('');
+
   const movementIntervalRef = useRef(null);
   const scheduleIntervalRef = useRef(null);
 
   const clearAllIntervals = () => {
     clearInterval(movementIntervalRef.current);
     clearInterval(scheduleIntervalRef.current);
-    movementIntervalRef.current = null;
-    scheduleIntervalRef.current = null;
   };
+  
+  const loadAssignment = useCallback(async () => {
+    setAssignmentLoading(true);
+    setAssignmentError('');
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get("http://localhost:5000/api/assignments/my-assignment", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setAssignment(res.data);
+      setSelectedVehicle(res.data.vehicle);
+      setTripSchedule(fullSchedule); 
+    } catch (err) {
+      if (err.response?.status === 404) {
+        setAssignment(null);
+      } else {
+        setAssignmentError("Could not load your assignment data.");
+      }
+    } finally {
+      setAssignmentLoading(false);
+    }
+  }, []);
 
   const markStopAsComplete = useCallback((stopIndex) => {
-    setCompletedStops(prevStops => {
-      const newStops = new Set(prevStops);
-      newStops.add(stopIndex);
-      return newStops;
-    });
+    setCompletedStops(prev => new Set(prev).add(stopIndex));
   }, []);
-  
+
   const resetCompletedStops = useCallback(() => {
     setCompletedStops(new Set());
   }, []);
 
   const endSimulation = useCallback((completed = false, onTripEnd) => {
     clearAllIntervals();
-    setIsTripActive(false);
-    if (typeof onTripEnd === 'function') {
-      onTripEnd(completed);
+    if (completed && tripSchedule.length > 0) {
+      const allStops = new Set(Array.from({ length: tripSchedule.length }, (_, i) => i));
+      setCompletedStops(allStops);
     }
-  }, []);
+    setIsTripActive(false);
+    if (typeof onTripEnd === 'function') onTripEnd(completed);
+  }, [tripSchedule]);
 
   const startSimulation = useCallback((config) => {
     const { routeCoordinates, schedule, onTripEnd, interval = 5000 } = config;
+    if (!routeCoordinates || !schedule) return;
 
-    // Safety check
-    if (!routeCoordinates || routeCoordinates.length === 0 || !schedule || schedule.length === 0) {
-      console.error("Simulation start failed: Missing route or schedule data.");
-      return;
-    }
-
-    // Reset any previous trip
     clearAllIntervals();
     resetCompletedStops();
-
-    // Initialize state for the new trip
+    setTripSchedule(schedule);
     setIsTripActive(true);
     setCurrentLeg(0);
     setCurrentBusPosition(routeCoordinates[0]);
-    markStopAsComplete(0); // Always complete the first stop on start
+    markStopAsComplete(0);
 
-    // SIMULATION 1: Bus Movement on the Map
     movementIntervalRef.current = setInterval(() => {
       setCurrentLeg(prevLeg => {
         const nextLeg = prevLeg + 1;
@@ -79,10 +101,9 @@ export const TripProvider = ({ children }) => {
       });
     }, interval);
 
-    // SIMULATION 2: Accurate Schedule Tracker Progression
     let currentStopIndex = 0;
-    const totalTripDuration = (routeCoordinates.length - 1) * interval;
-    const scheduleIntervalTime = totalTripDuration / (schedule.length - 1);
+    const totalDuration = (routeCoordinates.length - 1) * interval;
+    const scheduleInterval = totalDuration / (schedule.length - 1);
 
     scheduleIntervalRef.current = setInterval(() => {
       currentStopIndex++;
@@ -91,21 +112,14 @@ export const TripProvider = ({ children }) => {
       } else {
         endSimulation(true, onTripEnd);
       }
-    }, scheduleIntervalTime);
-
+    }, scheduleInterval);
   }, [resetCompletedStops, markStopAsComplete, endSimulation]);
 
   const value = {
-    completedStops,
-    markStopAsComplete,
-    resetCompletedStops,
-    isTripActive,
-    currentLeg,
-    currentBusPosition,
-    selectedVehicle,
-    setSelectedVehicle,
-    startSimulation,
-    endSimulation,
+    completedStops, markStopAsComplete, resetCompletedStops, isTripActive,
+    currentLeg, currentBusPosition, selectedVehicle, setSelectedVehicle,
+    tripSchedule, startSimulation, endSimulation,
+    assignment, assignmentLoading, assignmentError, loadAssignment
   };
 
   return <TripContext.Provider value={value}>{children}</TripContext.Provider>;

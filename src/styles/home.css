@@ -135,6 +135,7 @@
   line-height: 1.4;
 }
 
+/* --- THIS IS THE FIX --- */
 /* Due Card Specifics */
 .due-card {
   background-color: var(--status-red-bg);

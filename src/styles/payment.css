@@ -66,6 +66,7 @@
 .balance-actions .btn { border-radius: 50px; padding: 0.6rem 1.25rem; font-weight: 600; background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255,255,255,0.3); color: #fff; transition: all 0.2s ease; }
 .balance-actions .btn:hover { background: rgba(255,255,255,0.25); }
 
+/* --- THIS IS THE FIX --- */
 .pending-section { margin-bottom: 2rem; }
 .pending-card {
   background-color: var(--status-yellow-bg);

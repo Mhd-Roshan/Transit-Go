@@ -1,11 +1,10 @@
-/* --- Modern Revenue Report CSS (2025 Style - Redesigned) --- */
+/* --- Modern Revenue Report CSS (2025 Redesign) --- */
 
 /* --- 1. Animations --- */
-@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes fade-in-slide-up { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 
-.animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
-.collection-card { opacity: 0; animation: fade-in-slide-up 0.5s ease-out 0.1s forwards; }
+.animate-fade-in { animation: fade-in-slide-up 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards; opacity: 0; }
+.collection-card { animation: fade-in-slide-up 0.5s ease-out forwards; opacity: 0; }
 
 /* --- 2. Page Layout & Header --- */
 .fare-management-page .page-title { font-size: 2rem; font-weight: 800; margin-bottom: 0.25rem; }
@@ -42,6 +41,7 @@
   font-size: 1rem;
   background-color: var(--admin-background);
   transition: all 0.2s ease;
+  color: var(--admin-text-primary); /* Ensure text is visible */
 }
 .form-group input:focus, .form-group select:focus {
   outline: none;
@@ -80,7 +80,7 @@
 .reset-btn .material-icons { font-size: 1.1rem; }
 .reset-btn:hover { background-color: #e5e5ea; border-color: #c7c7cc; }
 
-/* --- 4. REDESIGNED Collections List --- */
+/* --- 4. Collections List --- */
 .section-title { font-size: 1.4rem; font-weight: 700; margin-bottom: 1.5rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--admin-border-color); }
 .collections-list { display: grid; gap: 1rem; }
 
@@ -88,7 +88,7 @@
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 1rem;
+  gap: 1.25rem;
   background-color: var(--admin-card-bg);
   padding: 1.25rem;
   border-radius: 1rem;
@@ -101,7 +101,7 @@
 
 /* Color coding for different types */
 .collection-card.passenger-payment { border-left-color: var(--admin-primary); }
-.collection-card.operator-collection { border-left-color: #ff9500; /* Orange for operator collections */ }
+.collection-card.operator-collection { border-left-color: #ff9500; /* Orange */ }
 
 .collection-card-icon {
   width: 44px;
@@ -143,14 +143,10 @@
   .fare-management-page .page-title { font-size: 1.6rem; }
   .fare-management-page .page-subtitle { font-size: 1rem; }
   .filter-card { padding: 1rem; }
-  .filter-actions {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 1rem;
-  }
+  .filter-actions { flex-direction: column; align-items: stretch; gap: 1rem; }
   .revenue-total { justify-content: space-between; }
   .collection-card { grid-template-columns: 1fr auto; gap: 0.5rem; padding: 1rem; }
-  .collection-card-icon { display: none; } /* Hide icon on small screens to save space */
+  .collection-card-icon { display: none; } /* Hide icon on small screens */
   .collection-info { grid-column: 1 / 2; }
   .collection-amount { grid-column: 2 / 3; }
 }

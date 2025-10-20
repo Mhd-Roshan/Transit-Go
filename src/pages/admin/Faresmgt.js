@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react"; 
 import axios from "axios";
+import { Spinner } from "react-bootstrap";
 import AdminLayout from "../../layouts/AdminLayout";
 import "../../styles/fares.css"; 
 
@@ -17,6 +18,7 @@ function Faresmgt() {
     operatorId: ''
   });
 
+  // Fetch data for filter dropdowns
   useEffect(() => {
     const fetchFilterData = async () => {
       const token = localStorage.getItem("token");
@@ -35,6 +37,7 @@ function Faresmgt() {
     fetchFilterData();
   }, []);
 
+  // Fetch revenue report whenever filters change
   useEffect(() => {
     const fetchRevenueReport = async () => {
       setLoading(true);
@@ -117,40 +120,46 @@ function Faresmgt() {
 
         <h3 className="section-title">Revenue Records</h3>
         {loading ? (
-          <p className="loading-text">Loading records...</p>
+          <div className="loading-text"><Spinner animation="border" /></div>
         ) : error ? (
           <p className="error-message">{error}</p>
         ) : reportData.length === 0 ? (
           <div className="empty-state">
             <span className="material-icons empty-icon">receipt_long</span>
             <h4 className="empty-title">No Revenue Found</h4>
-            <p className="empty-subtitle">No records match your current filters.</p>
+            <p className="empty-subtitle">No records match your current filters. Try expanding your date range.</p>
           </div>
         ) : (
           <div className="collections-list">
-            {/* --- REDESIGNED CARD RENDER --- */}
             {reportData.map((item, index) => {
               const isPayment = item.type === 'Passenger Payment';
               return (
                 <div 
                   key={item._id} 
                   className={`collection-card ${isPayment ? 'passenger-payment' : 'operator-collection'}`} 
-                  style={{ animationDelay: `${index * 50}ms` }}
+                  style={{ animationDelay: `${index * 30}ms` }}
                 >
                   <div className="collection-card-icon">
                     <span className="material-icons">
                       {isPayment ? 'credit_card' : 'payments'}
                     </span>
                   </div>
+                  {/* --- THIS IS THE FIX --- */}
                   <div className="collection-info">
-                    <p className="main-detail">{item.description}</p>
+                    {/* Display the vehicle ID in the main description for passenger payments */}
+                    <p className="main-detail">
+                        {isPayment && item.vehicleId 
+                            ? `${item.description} (Vehicle: ${item.vehicleId})` 
+                            : item.description}
+                    </p>
+                    {/* Simplified sub-detail to show the user and date */}
                     <p className="sub-detail">
-                      {item.userName || 'N/A'}
-                      {item.vehicleId && ` • Vehicle: ${item.vehicleId}`}
+                      By: {item.userName || 'N/A'}
                       {' • '}
-                      {new Date(item.date).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      {new Date(item.date).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </p>
                   </div>
+                  {/* --- END OF FIX --- */}
                   <div className="collection-amount">
                     ₹{item.amount.toLocaleString('en-IN')}
                   </div>

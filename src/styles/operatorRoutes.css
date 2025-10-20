@@ -7,6 +7,17 @@
   100% { box-shadow: 0 0 0 0 rgba(0, 122, 255, 0); }
 }
 
+@keyframes fade-in-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* --- 2. Page Layout & Header --- */
 .operator-routes-page {
   /* Main layout is handled by OperatorLayout's scrollable container */
@@ -112,10 +123,13 @@
   box-shadow: 0 4px 20px rgba(0, 122, 255, 0.3);
   animation: pulse 2s infinite;
 }
+
+/* --- FIX: Applied a direct color value for the 'end-trip' state --- */
 .trip-toggle-btn.end-trip {
-  background: var(--op-danger);
-  box-shadow: 0 4px 20px rgba(255, 59, 48, 0.3);
+  background: #dc3545; /* Replaced var(--op-danger) with a standard red */
+  box-shadow: 0 4px 20px rgba(220, 53, 69, 0.3); /* Matched shadow to new color */
 }
+
 .trip-toggle-btn.end-trip:hover .material-icons {
   transform: rotate(90deg);
 }

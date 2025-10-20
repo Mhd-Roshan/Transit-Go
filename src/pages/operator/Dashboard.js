@@ -1,60 +1,106 @@
-// src/pages/operator/Dashboard.js
+import React from 'react';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+import { Card, Spinner, Alert } from 'react-bootstrap';
+import QRCode from 'react-qr-code';
+import { useTrip } from '../../context/TripContext';
+import '../../styles/opdashboard.css';
 
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import { Card, Spinner, Alert } from "react-bootstrap";
-import QRCode from "react-qr-code";
-import { BsCheckCircleFill } from "react-icons/bs";
-import OperatorLayout from "../../layouts/OperatorLayout";
-import { useTrip } from "../../context/TripContext";
-import "../../styles/opdashboard.css";
+// --- DATA & CONFIG ---
+const schedule = [
+  { time: '8:00 AM', location: 'Adivaram (Start)' },
+  { time: '8:30 AM', location: 'Lakkidi View Point' },
+  { time: '8:45 AM', location: 'Vythiri' },
+  { time: '9:00 AM', location: 'Chundale' },
+  { time: '9:15 AM', location: 'Kalpetta Bus Stand' },
+  { time: '9:45 AM', location: 'Meenangadi' },
+  { time: '10:15 AM', location: 'Sulthan Bathery' },
+  { time: '10:45 AM', location: 'Pazhassi Park' },
+  { time: '11:00 AM', location: 'Pulpally (End Point)' },
+];
+const DAILY_GOAL = 5000;
+const SIMULATED_WEATHER_CONDITIONS = [
+  { condition: 'Sunny', icon: 'wb_sunny', temp: 31 },
+  { condition: 'Partly Cloudy', icon: 'cloud', temp: 29 },
+  { condition: 'Light Rain', icon: 'grain', temp: 26 },
+  { condition: 'Clear', icon: 'nightlight_round', temp: 24 },
+];
 
+// --- HELPER COMPONENTS ---
+const WeatherDisplay = () => {
+  const [weather] = useState(
+    SIMULATED_WEATHER_CONDITIONS[
+      Math.floor(Math.random() * SIMULATED_WEATHER_CONDITIONS.length)
+    ]
+  );
+  if (!weather) return null;
+  return (
+    <div className="info-block weather">
+      <span className="info-block-label">WAYANAD, KERALA</span>
+      <span className="info-block-value">
+        <span className="material-icons">{weather.icon}</span> {weather.temp}°C,{' '}
+        {weather.condition}
+      </span>
+    </div>
+  );
+};
+
+const RadialProgress = ({ progress }) => {
+  // MODIFICATION 1: Reduced radius for a smaller circle
+  const radius = 45; 
+  const stroke = 7; // Slightly reduced stroke for better proportion
+  const normalizedRadius = radius - stroke * 2;
+  const circumference = normalizedRadius * 2 * Math.PI;
+  const strokeDashoffset = circumference - (progress / 100) * circumference;
+  return (
+    <div className="radial-progress-container">
+      <svg height={radius * 2} width={radius * 2}>
+        <circle
+          className="progress-ring-bg"
+          strokeWidth={stroke}
+          r={normalizedRadius}
+          cx={radius}
+          cy={radius}
+        />
+        <circle
+          className="progress-ring-fg"
+          strokeWidth={stroke}
+          strokeDasharray={`${circumference} ${circumference}`}
+          style={{ strokeDashoffset }}
+          r={normalizedRadius}
+          cx={radius}
+          cy={radius}
+        />
+      </svg>
+      <div className="progress-text">{Math.round(progress)}%</div>
+    </div>
+  );
+};
+
+// --- MAIN DASHBOARD COMPONENT ---
 const Dashboard = () => {
   const [assignment, setAssignment] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const [liveEarnings, setLiveEarnings] = useState(0);
-  // --- NEW: State for simulated passenger count ---
   const [simulatedPassengers, setSimulatedPassengers] = useState(0);
 
   const { completedStops, isTripActive } = useTrip();
-  
-  // --- NEW: Daily goal for the progress bar ---
-  const DAILY_GOAL = 5000;
-
-  const schedule = [
-    { time: "8:00 AM", location: "Start Point" },
-    { time: "8:15 AM", location: "City Park" },
-    { time: "8:30 AM", location: "Main Street" },
-    { time: "8:45 AM", location: "Downtown Central" },
-    { time: "9:00 AM", location: "Westside Mall" },
-    { time: "9:15 AM", location: "North Bridge" },
-    { time: "9:30 AM", location: "University Campus" },
-    { time: "9:45 AM", location: "Hospital Junction" },
-    { time: "10:00 AM", location: "Eastside Market" },
-    { time: "10:30 AM", location: "Green Valley" },
-    { time: "11:00 AM", location: "Airport Shuttle Stop" },
-    { time: "11:15 AM", location: "Railway Station" },
-    { time: "11:30 AM", location: "End Point" },
-  ];
 
   useEffect(() => {
     const fetchAssignment = async () => {
       setLoading(true);
-      setError("");
+      setError('');
       try {
-        const token = localStorage.getItem("token");
-        const headers = { Authorization: `Bearer ${token}` };
-        const res = await axios.get("http://localhost:5000/api/assignments/my-assignment", { headers });
+        const token = localStorage.getItem('token');
+        const res = await axios.get(
+          'http://localhost:5000/api/assignments/my-assignment',
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
         setAssignment(res.data);
       } catch (err) {
-        if (err.response?.status === 404) {
-          console.log("Operator has no current assignment.");
-          setAssignment(null);
-        } else {
-          console.error("Error fetching assignment:", err);
-          setError("Could not load dashboard data. Please try again later.");
-        }
+        if (err.response?.status === 404) setAssignment(null);
+        else setError('Could not load dashboard data.');
       } finally {
         setLoading(false);
       }
@@ -62,137 +108,208 @@ const Dashboard = () => {
     fetchAssignment();
   }, []);
 
-  // --- UPDATED: Simulation now also counts passengers ---
   useEffect(() => {
     let intervalId = null;
-    if (assignment && isTripActive) {
+    
+    if (isTripActive) {
       intervalId = setInterval(() => {
-        setLiveEarnings(prevEarnings => {
-          const CAP = DAILY_GOAL + 500; // Allow going slightly over goal
-          if (prevEarnings >= CAP) return CAP;
-          const newFare = Math.random() * (150 - 20) + 20;
-          const updated = prevEarnings + newFare;
-          // Increment passengers when fare is collected
-          setSimulatedPassengers(p => p + Math.floor(Math.random() * 3) + 1);
-          return updated >= CAP ? CAP : updated;
-        });
-      }, 8000);
-    }
-    return () => { if (intervalId) clearInterval(intervalId); };
-  }, [assignment, isTripActive]);
-
-  // --- UPDATED: Reset both earnings and passengers on trip start ---
-  useEffect(() => {
-    if (isTripActive && assignment) {
-      setLiveEarnings(0);
-      setSimulatedPassengers(0);
-    }
-  }, [isTripActive, assignment]);
-  
-  const earningsProgress = (liveEarnings / DAILY_GOAL) * 100;
-
-  const renderContent = () => {
-    if (loading) {
-      return <div className="status-container"><Spinner animation="border" variant="primary" /><p className="mt-2">Loading Dashboard...</p></div>;
+        setLiveEarnings((prev) =>
+          Math.min(prev + Math.random() * (150 - 20) + 20, DAILY_GOAL + 500)
+        );
+        setSimulatedPassengers((p) => p + Math.floor(Math.random() * 3) + 1);
+      }, 7000);
+    } else {
+      if (completedStops.size === schedule.length) {
+        setLiveEarnings((prev) => Math.max(prev, DAILY_GOAL));
+      } else {
+        setLiveEarnings(0);
+        setSimulatedPassengers(0);
+      }
     }
     
-    if (error) {
-       return <div className="status-container"><Alert variant="danger">{error}</Alert></div>;
-    }
+    return () => clearInterval(intervalId);
+  }, [isTripActive, completedStops.size]); 
 
-    // --- NEW: Render a full-page "No Assignment" state ---
-    if (!assignment || !assignment.vehicle) {
-        return (
-            <div className="no-assignment-container">
-                <span className="material-icons icon">no_transfer</span>
-                <h2>No Vehicle Assigned</h2>
-                <p>You cannot start a trip or collect fares until an administrator assigns a vehicle to you.</p>
-            </div>
-        );
-    }
+  const earningsProgress = (liveEarnings / DAILY_GOAL) * 100;
+  const nextStopIndex = isTripActive
+    ? schedule.findIndex((_, index) => !completedStops.has(index))
+    : -1;
+
+  const renderContent = () => {
+    if (loading)
+      return (
+        <div className="status-container">
+          <Spinner animation="border" />
+          <p>Loading Dashboard...</p>
+        </div>
+      );
+    if (error)
+      return (
+        <div className="status-container">
+          <Alert variant="danger">{error}</Alert>
+        </div>
+      );
+    if (!assignment)
+      return (
+        <div className="no-assignment-container">
+          <span className="material-icons icon">no_transfer</span>
+          <h2>No Vehicle Assigned</h2>
+          <p>
+            You cannot start a trip until an administrator assigns a vehicle to
+            you.
+          </p>
+        </div>
+      );
+
+    const { vehicle } = assignment;
+    const source = vehicle.source || schedule[0].location;
+    const destination =
+      vehicle.destination || schedule[schedule.length - 1].location;
 
     return (
-      <>
-        {/* --- Card 1: Redesigned Live Trip Status Card --- */}
-        <Card className="dashboard-card" style={{ animationDelay: '100ms' }}>
+      <div className="dashboard-grid">
+        {/* --- Header Info Card --- */}
+        <Card
+          className="dashboard-card header-card"
+          style={{ '--stagger-delay': '100ms' }}
+        >
           <Card.Body>
-            <div className="vehicle-details-grid">
-              {/* Left Side: Details */}
-              <div className="vehicle-info">
-                <p className="vehicle-id">{assignment.vehicle.vehicleId}</p>
-                <p className="vehicle-model">{assignment.vehicle.model}</p>
-                
-                <div className="earnings-section">
-                    <p className="earnings-label">Live Earnings (Simulated)</p>
-                    <h3 className="earnings-amount">₹{liveEarnings.toLocaleString('en-IN')}</h3>
-                    <div className="earnings-progress">
-                        <div className="earnings-progress-bar" style={{ width: `${Math.min(earningsProgress, 100)}%` }}></div>
-                    </div>
-                </div>
+            <h3 className="vehicle-id-header">{vehicle.vehicleId}</h3>
+            <p className="route-path-header">
+              <span>{source.split(' ')[0]}</span>{' '}
+              <span className="material-icons">arrow_right_alt</span>{' '}
+              <span>{destination.split(' ')[0]}</span>
+            </p>
+            <div className="header-info-footer">
+              <WeatherDisplay />
+            </div>
+          </Card.Body>
+        </Card>
 
-                <div className="summary-grid">
-                    <div className="summary-item">
-                        <p className="summary-value">
-                            <span className="material-icons">hail</span>
-                            {simulatedPassengers}
-                        </p>
-                        <p className="summary-label">Passengers</p>
-                    </div>
-                    <div className="summary-item">
-                        <p className="summary-value">
-                            <span className="material-icons">tour</span>
-                            {completedStops.size} / {schedule.length}
-                        </p>
-                        <p className="summary-label">Stops Completed</p>
-                    </div>
-                    <div className="summary-item">
-                        <p className="summary-value">
-                            <span className={`status-badge ${isTripActive ? 'active' : 'inactive'}`}>
-                                {isTripActive ? 'Active' : 'Inactive'}
-                            </span>
-                        </p>
-                        <p className="summary-label">Trip Status</p>
-                    </div>
-                </div>
+        {/* --- QR Code Card --- */}
+        <Card
+          className="dashboard-card qr-card"
+          style={{ '--stagger-delay': '200ms' }}
+        >
+          <Card.Body>
+            <Card.Title>Scan for UPI Payment</Card.Title>
+            <div className="qr-wrapper">
+              <QRCode
+                value={`/pay?vehicle=${vehicle._id}`}
+                size={256}
+                viewBox={`0 0 256 256`}
+                style={{
+                  height: 'auto',
+                  maxWidth: '100%',
+                  width: '100%',
+                }}
+              />
+            </div>
+          </Card.Body>
+        </Card>
 
+        {/* --- Live Status & Earnings Card --- */}
+        <Card
+          className="dashboard-card status-card"
+          style={{ '--stagger-delay': '300ms' }}
+        >
+          <Card.Body>
+            <Card.Title>Live Status</Card.Title>
+            <div className="earnings-container">
+              <RadialProgress progress={earningsProgress} />
+              <div className="earnings-details">
+                <span className="earnings-amount">
+                  ₹
+                  {liveEarnings.toLocaleString('en-IN', {
+                    maximumFractionDigits: 0,
+                  })}
+                </span>
+                <span className="earnings-label">Today's Earnings</span>
               </div>
-              {/* Right Side: QR Code */}
-              <div className="qr-code-container">
-                <div className="qr-code-wrapper">
-                  <QRCode value={`/pay?vehicle=${assignment.vehicle._id}`} size={128} viewBox={`0 0 128 128`} />
+            </div>
+            <div className="stats-grid">
+              {/* MODIFICATION 2: Wrapped value/label in a div for better alignment */}
+              <div className="stat-item">
+                <span className="material-icons">groups</span>
+                <div className="stat-details">
+                  <span className="stat-value">{simulatedPassengers}</span>
+                  <span className="stat-label">Passengers</span>
+                </div>
+              </div>
+              <div className="stat-item">
+                <span className="material-icons">tour</span>
+                <div className="stat-details">
+                  <span className="stat-value">
+                    {completedStops.size}/{schedule.length}
+                  </span>
+                  <span className="stat-label">Stops</span>
+                </div>
+              </div>
+              <div className="stat-item">
+                <span
+                  className={`status-indicator ${
+                    isTripActive ? 'active' : ''
+                  }`}
+                ></span>
+                <div className="stat-details">
+                  <span
+                    className={`stat-value ${
+                      isTripActive ? 'text-success' : 'text-danger'
+                    }`}
+                  >
+                    {isTripActive ? 'Active' : 'Ended'}
+                  </span>
+                  <span className="stat-label">Trip Status</span>
                 </div>
               </div>
             </div>
           </Card.Body>
         </Card>
 
-        {/* --- Card 2: Schedule Tracker Card --- */}
-        <Card className="dashboard-card" style={{ animationDelay: '200ms' }}>
+        {/* --- Live Route Tracker Card --- */}
+        <Card
+          className="dashboard-card route-card"
+          style={{ '--stagger-delay': '400ms' }}
+        >
           <Card.Body>
-            <Card.Title>Schedule Tracker</Card.Title>
-            <div className="schedule-timeline">
-              {schedule.map((item, index) => (
-                <div key={index} className={`schedule-item ${completedStops.has(index) ? 'completed' : ''}`}>
-                  <div className="schedule-details">
-                    <p className="schedule-time m-0">{item.time}</p>
-                    <p className="schedule-location m-0">{item.location}</p>
+            <Card.Title>Live Route Tracker</Card.Title>
+            <div className="route-timeline">
+              {schedule.map((item, index) => {
+                const isCompleted = completedStops.has(index);
+                const isCurrent = nextStopIndex === index;
+                return (
+                  <div
+                    key={index}
+                    className={`route-stop ${
+                      isCompleted ? 'completed' : ''
+                    } ${isCurrent ? 'current' : ''}`}
+                  >
+                    <div className="stop-marker"></div>
+                    <div className="stop-details">
+                      <span className="stop-time">{item.time}</span>
+                      <span className="stop-location">{item.location}</span>
+                    </div>
+                    {isCurrent && (
+                      <span className="eta-badge">EN ROUTE</span>
+                    )}
                   </div>
-                  {completedStops.has(index) && (
-                    <BsCheckCircleFill className="completed-icon" />
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </Card.Body>
         </Card>
-      </>
+      </div>
     );
   };
 
   return (
-    <OperatorLayout>
+    <div className="operator-dashboard-page">
+      <div className="page-header">
+        <h2 className="page-title">Live Command Center</h2>
+        <p className="page-subtitle">Your real-time mission overview.</p>
+      </div>
       {renderContent()}
-    </OperatorLayout>
+    </div>
   );
 };
 

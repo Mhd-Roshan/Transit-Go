@@ -103,19 +103,19 @@ function PaymentPage() {
       const token = localStorage.getItem("token");
       const headers = { Authorization: `Bearer ${token}` };
 
-      // Step 1: Charge the user's wallet
       const chargeRes = await axios.post("http://localhost:5000/api/payments/charge",
         { amount: pendingTrip.amount, description: `Trip to ${pendingTrip.destination}` },
         { headers }
       );
 
-      // Step 2: If charge is successful, save the trip to history
+      // --- THIS IS THE FIX ---
+      // Send both fare values when creating the final trip record
       await axios.post("http://localhost:5000/api/trips", {
           destination: pendingTrip.destination,
-          fare: pendingTrip.amount
+          amountPaid: pendingTrip.amount,
+          calculatedFare: pendingTrip.calculatedFare || pendingTrip.amount // Fallback for older pending trips
       }, { headers });
 
-      // Step 3: Update UI state and clear pending trip from localStorage
       setBalance(chargeRes.data.newBalance);
       setTransactions(prev => [chargeRes.data.newTransaction, ...prev]);
       setPendingTrip(null);

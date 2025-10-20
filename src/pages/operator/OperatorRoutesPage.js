@@ -1,5 +1,3 @@
-// src/pages/operator/OperatorRoutesPage.js
-
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import axios from "axios";
 import { Spinner, Alert } from "react-bootstrap";
@@ -21,18 +19,43 @@ const busIcon = new L.Icon({
     iconSize: [40, 40], iconAnchor: [20, 20], popupAnchor: [0, -20]
 });
 
-// --- SIMULATED ROUTE DATA ---
-const routeCoordinates = [ [12.9716, 77.5946], [12.9750, 77.6000], [12.9790, 77.6050], [12.9830, 77.6100], [12.9870, 77.6150], [12.9910, 77.6200] ];
-const fullSchedule = [
-    { time: "8:00 AM", location: "Start Point" }, { time: "8:15 AM", location: "City Park" },
-    { time: "8:30 AM", location: "Main Street" }, { time: "8:45 AM", location: "Downtown Central" },
-    { time: "9:00 AM", location: "Westside Mall" }, { time: "9:15 AM", location: "North Bridge" },
-    { time: "9:30 AM", location: "University Campus" }, { time: "9:45 AM", location: "Hospital Junction" },
-    { time: "10:00 AM", location: "Eastside Market" }, { time: "10:15 AM", location: "Riverfront Plaza" },
-    { time: "10:30 AM", location: "Green Valley" }, { time: "10:45 AM", location: "Tech Park" },
-    { time: "11:00 AM", location: "Airport Shuttle Stop" }, { time: "11:15 AM", location: "Railway Station" },
-    { time: "11:30 AM", location: "End Point" },
+// --- UPDATED & REALISTIC SIMULATED ROUTE DATA (Kerala: Wayanad Route) ---
+const routeCoordinates = [
+  // Thamarassery to Lakkidi (Ghat Road)
+  [11.4555, 76.0155], // Start: Adivaram
+  [11.4810, 76.0180],
+  [11.5050, 76.0200],
+  [11.5160, 76.0210], // Lakkidi View Point
+  // Lakkidi to Vythiri
+  [11.5280, 76.0300],
+  [11.5490, 76.0410], // Vythiri
+  // Vythiri to Kalpetta
+  [11.5780, 76.0520], // Chundale
+  [11.6000, 76.0750],
+  [11.6100, 76.0840], // Kalpetta
+  // Kalpetta to Sulthan Bathery
+  [11.6250, 76.1250],
+  [11.6350, 76.1650], // Meenangadi
+  [11.6500, 76.2200],
+  [11.6600, 76.2550], // Sulthan Bathery
+  // Sulthan Bathery to Pulpally
+  [11.6950, 76.2200],
+  [11.7300, 76.1900],
+  [11.7750, 76.1700], // End: Pulpally
 ];
+
+const fullSchedule = [
+    { time: "8:00 AM", location: "Adivaram (Start)" },
+    { time: "8:30 AM", location: "Lakkidi View Point" },
+    { time: "8:45 AM", location: "Vythiri" },
+    { time: "9:00 AM", location: "Chundale" },
+    { time: "9:15 AM", location: "Kalpetta Bus Stand" },
+    { time: "9:45 AM", location: "Meenangadi" },
+    { time: "10:15 AM", location: "Sulthan Bathery" },
+    { time: "10:45 AM", location: "Pazhassi Park" },
+    { time: "11:00 AM", location: "Pulpally (End Point)" },
+];
+
 
 function OperatorRoutesPage() {
   const [myAssignment, setMyAssignment] = useState(null);
@@ -126,7 +149,7 @@ function OperatorRoutesPage() {
         <div className="map-wrapper">
           <MapContainer
             center={currentBusPosition || routeCoordinates[0]}
-            zoom={15}
+            zoom={13} // Adjusted zoom to better fit the initial route view
             scrollWheelZoom={false}
             className="leaflet-container"
             ref={mapRef}
@@ -147,9 +170,9 @@ function OperatorRoutesPage() {
                 {selectedVehicle.model} ({selectedVehicle.vehicleId})
             </p>
             <h3 className="route-path">
-              <span>{selectedVehicle.source || 'Start'}</span>
+              <span>{selectedVehicle.source || 'Adivaram'}</span>
               <span className="material-icons">east</span>
-              <span>{selectedVehicle.destination || 'End'}</span>
+              <span>{selectedVehicle.destination || 'Pulpally'}</span>
             </h3>
           </div>
           

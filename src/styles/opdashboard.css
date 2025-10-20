@@ -1,93 +1,342 @@
-/* src/styles/opdashboard.css */
+/* === Operator Dashboard CSS - Flat Dark Theme v6 (Updated) === */
 
-/* --- Modern Operator Dashboard CSS (Content Styles Only) --- */
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
-
-/* NOTE: All general layout styles (header, main, footer, scrollbars) have been moved to operatorLayout.css */
-
-/* --- Animations for page content --- */
-@keyframes fade-in-slide-up { 
-  from { opacity: 0; transform: translateY(20px); } 
-  to { opacity: 1; transform: translateY(0); } 
+/* --- 1. Root Variables & Global Styles --- */
+:root {
+  --op-primary: #0A84FF;
+  --op-success: #32D74B;
+  --op-danger: #FF453A;
+  --op-primary-glow: rgba(10, 132, 255, 0.2);
+  --op-success-glow: rgba(50, 215, 75, 0.25);
+  --op-danger-glow: rgba(255, 69, 58, 0.25);
+  --op-body-bg: #1c1c1e; /* Very dark gray for the page background */
+  --op-card-bg: #2c2c2e; /* Slightly lighter gray for cards */
+  --op-border-color: #48484a; /* Subtle border color */
+  --op-text-primary: #FFFFFF;
+  --op-text-secondary: #a0a0a0;
+  --animation-fade-in: fade-in-slide-up 0.6s
+    cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
-@keyframes pop-in {
-  from { transform: scale(0.8); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
-}
 
-/* --- Modernized Content Cards --- */
-.dashboard-card {
-  background-color: var(--op-card-bg);
+body {
+  background-color: var(--op-body-bg);
   color: var(--op-text-primary);
-  border-radius: 1.5rem;
-  box-shadow: var(--soft-shadow);
-  margin-bottom: 1.5rem;
-  animation: fade-in-slide-up 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards;
-  opacity: 0;
-  border: 1px solid var(--op-border-color);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+@keyframes fade-in-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(25px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 var(--op-success-glow);
+  }
+  70% {
+    transform: scale(1.1);
+    box-shadow: 0 0 10px 10px rgba(50, 215, 75, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 var(--op-success-glow);
+  }
+}
+
+/* --- 2. Page Layout & Header --- */
+.operator-dashboard-page {
   padding: 1.5rem;
 }
-.dashboard-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 12px 45px rgba(0,0,0,0.12);
-}
-.dashboard-card .card-body {
-    padding: 0;
-}
-.dashboard-card .card-title {
-  font-weight: 700;
-  font-size: 1.1rem;
-  color: var(--op-text-primary);
-  margin-bottom: 1rem;
-  padding-bottom: 1rem;
+.page-header {
+  position: sticky;
+  top: 1rem;
+  z-index: 10;
+  padding: 1rem 1.5rem;
+  margin: -1.5rem -1.5rem 1.5rem -1.5rem;
+  background-color: var(--op-card-bg); /* Match body for seamless feel */
   border-bottom: 1px solid var(--op-border-color);
 }
-
-/* --- Component-Specific Styling --- */
-.status-container { text-align: center; padding: 2rem; }
-
-.vehicle-details-grid {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: flex-start;
-  gap: 1.5rem;
+.page-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--op-text-primary);
 }
-.vehicle-info .vehicle-id {
-  font-size: 2.25rem;
+.page-subtitle {
+  font-size: 1rem;
+  color: var(--op-text-secondary);
+  margin-top: 0.25rem;
+}
+
+/* --- 3. Dashboard Grid Layout --- */
+.dashboard-grid {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    'header header qr'
+    'status route route';
+}
+.header-card, .qr-card { height: 100%; }
+.header-card { grid-area: header; }
+.qr-card { grid-area: qr; }
+.status-card { grid-area: status; }
+.route-card { grid-area: route; }
+
+/* --- 4. Solid Card Styling --- */
+.dashboard-card {
+  background: var(--op-card-bg);
+  border: 1px solid var(--op-border-color);
+  border-radius: 1.25rem;
+  padding: 1.5rem;
+  box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  animation: var(--animation-fade-in);
+  animation-delay: var(--stagger-delay, 0ms);
+}
+.dashboard-card .card-body {
+  padding: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+.dashboard-card .card-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--op-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 1rem;
+}
+
+/* --- 5. Component-Specific Styling --- */
+
+/* Header & QR Cards */
+.header-card .card-body { justify-content: space-between; }
+.vehicle-id-header {
+  font-size: 2.5rem;
   font-weight: 800;
   color: var(--op-primary);
-  line-height: 1.1;
-  letter-spacing: -1.5px;
-  margin-bottom: 0.25rem;
+  margin: 0;
+  line-height: 1;
 }
-.vehicle-info .vehicle-model { font-size: 1rem; color: var(--op-text-secondary); margin-bottom: 1.5rem; }
-
-.qr-code-container {
-  flex-shrink: 0;
-  margin: 0 auto;
+.route-path-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.25rem;
+  color: var(--op-text-secondary);
+  margin: 0.5rem 0 0 0;
 }
-.qr-code-wrapper {
-  background: white;
+.header-info-footer { margin-top: auto; padding-top: 1.5rem; }
+.info-block-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--op-text-secondary);
+}
+.info-block-value {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--op-text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.qr-card .card-body { align-items: center; justify-content: center; }
+.qr-card .card-title { text-align: center; }
+.qr-wrapper {
+  background: #ffffff;
   padding: 1rem;
-  border-radius: 1.25rem;
-  border: 1px solid var(--op-border-color);
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  border-radius: 1rem;
+  width: 100%;
+  max-width: 160px;
+  margin: auto 0;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
 }
 
-.earnings-section .earnings-label { font-size: 0.9rem; color: var(--op-text-secondary); }
-.earnings-section .earnings-amount { font-size: 2.5rem; font-weight: 700; color: var(--op-success); line-height: 1.2; }
-.earnings-progress { background-color: var(--op-border-color); height: 8px; border-radius: 99px; overflow: hidden; margin-top: 0.75rem; }
-.earnings-progress-bar { height: 100%; background: linear-gradient(90deg, var(--op-success), #86e3ce); border-radius: 99px; transition: width 0.5s ease-out; }
+/* Status & Earnings Card */
+.status-card .card-body { align-items: center; text-align: center; }
+.earnings-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  margin-bottom: 1.5rem;
+}
+/* MODIFIED: Reduced size of the container */
+.radial-progress-container { position: relative; width: 90px; height: 90px; }
+.progress-ring-bg, .progress-ring-fg { fill: transparent; stroke-linecap: round; }
+.progress-ring-bg { stroke: var(--op-border-color); }
+.progress-ring-fg {
+  stroke: var(--op-success);
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+  transition: stroke-dashoffset 0.5s ease-out;
+}
+/* MODIFIED: Reduced font size to fit the smaller circle */
+.progress-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--op-success);
+}
+.earnings-details {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.earnings-amount {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--op-text-primary);
+  line-height: 1.1;
+}
+.earnings-label {
+  font-size: 0.9rem;
+  color: var(--op-text-secondary);
+  margin-top: 0.25rem;
+}
+/* MODIFIED: Updated stats grid styling */
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem; /* Increased gap slightly for better spacing */
+  width: 100%;
+  border-top: 1px solid var(--op-border-color);
+  padding-top: 1.5rem;
+}
+.stat-item {
+  display: grid;
+  grid-template-columns: auto 1fr; /* Icon column auto-sizes, text takes rest */
+  align-items: center; /* Vertically centers the icon with the text block */
+  text-align: left;
+  gap: 0.75rem;
+}
+/* ADDED: A flex container for the value and label */
+.stat-details {
+  display: flex;
+  flex-direction: column;
+}
+.stat-item .material-icons { font-size: 1.75rem; color: var(--op-primary); }
+.stat-value { font-size: 1.1rem; font-weight: 700; color: var(--op-text-primary); }
+/* MODIFIED: Removed grid-column property as it's now handled by the parent grid */
+.stat-label { font-size: 0.8rem; color: var(--op-text-secondary); }
 
-.summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 1rem; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--op-border-color); }
-.summary-item { text-align: center; }
-.summary-item .summary-value { font-size: 1.5rem; font-weight: 700; color: var(--op-text-primary); display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
-.summary-item .summary-value .material-icons { font-size: 1.2rem; color: var(--op-text-secondary); }
-.summary-item .summary-label { font-size: 0.8rem; color: var(--op-text-secondary); font-weight: 500; }
-.status-badge { font-size: 0.8rem; font-weight: 600; padding: 0.25rem 0.75rem; border-radius: 99px; }
-.status-badge.active { background-color: rgba(52, 199, 89, 0.15); color: var(--op-success); }
-.status-badge.inactive { background-color: rgba(142, 142, 147, 0.15); color: var(--op-text-secondary); }
+.status-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: var(--op-danger);
+  box-shadow: 0 0 8px var(--op-danger-glow);
+  transition: all 0.3s ease;
+  justify-self: center; /* Center the dot within its grid cell */
+}
+.status-indicator.active {
+  background-color: var(--op-success);
+  box-shadow: 0 0 8px var(--op-success-glow);
+}
+.text-success { color: var(--op-success) !important; }
+.text-danger { color: var(--op-danger) !important; }
+
+/* Route Tracker Card */
+.route-card .card-title { text-align: left; }
+.route-timeline {
+  position: relative;
+  padding-left: 1.5rem;
+  margin-left: 0.5rem;
+  flex-grow: 1;
+  overflow-y: auto;
+}
+.route-timeline::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 2px;
+  height: 100%;
+  background-color: var(--op-border-color);
+}
+.route-stop {
+  display: flex;
+  align-items: flex-start;
+  position: relative;
+  padding: 0.75rem 0;
+  transition: all 0.3s;
+  border-radius: 0.75rem;
+}
+.stop-marker {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: var(--op-border-color);
+  position: absolute;
+  left: -1.8rem;
+  top: 1.1rem;
+  border: 2px solid var(--op-card-bg);
+  transition: all 0.3s ease;
+}
+.stop-details { display: flex; flex-direction: column; }
+.stop-time { font-size: 0.9rem; font-weight: 600; color: var(--op-text-primary); }
+.stop-location { font-size: 1rem; color: var(--op-text-secondary); }
+.route-stop.completed { opacity: 0.6; }
+.route-stop.completed .stop-marker { background-color: var(--op-success); }
+.route-stop.current {
+  background-color: var(--op-primary-glow);
+  padding-left: 0.75rem;
+  margin-left: -0.75rem;
+}
+.route-stop.current .stop-marker {
+  background-color: var(--op-success);
+  transform: scale(1.5);
+  animation: pulse 2s infinite;
+}
+.route-stop.current .stop-time, .route-stop.current .stop-location {
+  color: var(--op-success);
+  font-weight: 700;
+}
+.eta-badge {
+  position: absolute;
+  right: 0.75rem;
+  top: 0.9rem;
+  background: var(--op-primary-glow);
+  color: var(--op-primary);
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.5rem;
+}
+
+/* --- 6. Responsiveness & Fallbacks --- */
+@media (max-width: 1200px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      'header qr'
+      'status route';
+  }
+}
+@media (max-width: 768px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas: 'header' 'qr' 'status' 'route';
+  }
+}
+
+.route-timeline::-webkit-scrollbar { width: 6px; }
+.route-timeline::-webkit-scrollbar-track { background: transparent; }
+.route-timeline::-webkit-scrollbar-thumb { background: var(--op-border-color); border-radius: 3px; }
 
 .no-assignment-container {
   display: flex;
@@ -96,59 +345,22 @@
   justify-content: center;
   text-align: center;
   padding: 2rem;
-  animation: fade-in-slide-up 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards;
   min-height: 60vh;
 }
-.no-assignment-container .icon { font-size: 3.5rem; color: var(--op-primary); padding: 1.5rem; background-color: var(--op-card-bg); border-radius: 50%; margin-bottom: 1.5rem; border: 1px solid var(--op-border-color); box-shadow: var(--soft-shadow); }
-.no-assignment-container h2 { font-size: 1.5rem; font-weight: 600; color: var(--op-text-primary); margin-bottom: 0.5rem; }
-.no-assignment-container p { color: var(--op-text-secondary); max-width: 350px; }
-
-.schedule-timeline { position: relative; padding-left: 1.5rem; border-left: 2px solid var(--op-border-color); }
-.schedule-item { position: relative; display: flex; align-items: center; justify-content: space-between; padding: 1rem 0 1rem 1.5rem; transition: opacity 0.3s ease; }
-.schedule-item::after { display: none; }
-.schedule-item::before { content: ''; position: absolute; top: 50%; left: -2.4rem; transform: translate(-50%, -50%); width: 16px; height: 16px; border-radius: 50%; border: 3px solid var(--op-card-bg); background-color: var(--op-border-color); z-index: 1; transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1); }
-.schedule-item.completed::before { background-color: var(--op-success); transform: translate(-50%, -50%) scale(1.1); box-shadow: 0 0 0 4px var(--op-card-bg), 0 0 0 6px var(--op-success); }
-.schedule-item.completed { opacity: 0.7; }
-.schedule-item.completed .schedule-time, .schedule-item.completed .schedule-location { text-decoration: line-through; text-decoration-color: rgba(110, 110, 115, 0.5); color: var(--op-text-secondary); }
-.completed-icon { color: var(--op-success); font-size: 1.75rem; animation: pop-in 0.4s cubic-bezier(0.25, 1, 0.5, 1) backwards; }
-.schedule-item:not(:last-child) { border-bottom: 1px solid var(--op-border-color); }
-.schedule-time { font-weight: 600; font-size: 1rem; transition: color 0.3s ease; }
-.schedule-location { color: var(--op-text-secondary); font-size: 0.9rem; transition: color 0.3s ease; }
-
-/* --- MOBILE RESPONSIVENESS (page content only) --- */
-@media (max-width: 768px) {
-  .dashboard-card {
-    padding: 1rem;
-    border-radius: 1.25rem;
-  }
-  .dashboard-card .card-title {
-    font-size: 1rem;
-    padding-bottom: 0.75rem;
-    margin-bottom: 1rem;
-  }
-  .vehicle-details-grid {
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-    text-align: center;
-  }
-  .vehicle-info .vehicle-id {
-    font-size: 1.8rem;
-  }
-  .qr-code-container {
-    order: -1;
-  }
-  .summary-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-  }
-  .summary-item .summary-value {
-    font-size: 1.25rem;
-  }
-  .no-assignment-container {
-    padding: 1rem;
-    height: auto;
-  }
-  .no-assignment-container h2 {
-    font-size: 1.2rem;
-  }
+.no-assignment-container .icon {
+  font-size: 3.5rem;
+  color: var(--op-primary);
+  padding: 1.5rem;
+  background: var(--op-card-bg);
+  border-radius: 50%;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--op-border-color);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
+.no-assignment-container h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--op-text-primary);
+  margin-bottom: 0.5rem;
+}
+.no-assignment-container p { color: var(--op-text-secondary); max-width: 350px; }

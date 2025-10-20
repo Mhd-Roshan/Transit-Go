@@ -14,7 +14,14 @@ const TripSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  fare: {
+  // --- THIS IS THE FIX ---
+  // Renamed 'fare' to 'amountPaid' to be more specific
+  amountPaid: {
+    type: Number,
+    required: true,
+  },
+  // Added a new field to store the original fare before any discounts/adjustments
+  calculatedFare: {
     type: Number,
     required: true,
   },

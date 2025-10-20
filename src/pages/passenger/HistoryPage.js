@@ -76,7 +76,12 @@ function HistoryPage() {
               <h4>{trip.origin || 'Start'} to {trip.destination}</h4>
               <p>{new Date(trip.tripDate).toDateString()}</p>
             </div>
-            <div className="trip-card-fare"><span>₹{trip.fare.toFixed(2)}</span></div>
+            {/* --- THIS IS THE FIX --- */}
+            {/* Use `trip.amountPaid` if it exists, otherwise fall back to `trip.fare`. */}
+            {/* Also, provide a default of 0 to prevent crashes if neither exists. */}
+            <div className="trip-card-fare">
+              <span>₹{(trip.amountPaid || trip.fare || 0).toFixed(2)}</span>
+            </div>
           </div>
         ))}
       </div>

@@ -35,7 +35,8 @@ function HomePage() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [scannedVehicleId, setScannedVehicleId] = useState(null);
   const [destinationInModal, setDestinationInModal] = useState("");
-  const [fareAmount, setFareAmount] = useState(null); // State to hold the calculated fare
+  const [fareAmount, setFareAmount] = useState(null); 
+  const [calculatedFareAmount, setCalculatedFareAmount] = useState(null); 
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentResult, setPaymentResult] = useState({ status: null, message: '' });
   const [modalError, setModalError] = useState('');
@@ -71,7 +72,7 @@ function HomePage() {
   
   const handleScanSuccess = (decodedText) => {
     setShowScanner(false);
-    setError(''); // Clear any previous page errors
+    setError(''); 
     try {
       const params = new URLSearchParams(
         decodedText.includes('?') ? decodedText.substring(decodedText.indexOf('?')) : decodedText
@@ -79,8 +80,25 @@ function HomePage() {
       const vehicleId = params.get('vehicle');
 
       if (vehicleId) {
+        // --- THIS IS THE FIX ---
+        // 1. Instantly create a placeholder pending trip in localStorage.
+        const MINIMUM_FARE = 20; // Define a minimum fare
+        const placeholderTrip = {
+            vehicleId: vehicleId,
+            destination: "Not Set",
+            amount: MINIMUM_FARE,
+            calculatedFare: MINIMUM_FARE,
+            createdAt: new Date().toISOString()
+        };
+        localStorage.setItem('pendingTrip', JSON.stringify(placeholderTrip));
+
+        // 2. Set state to open the modal.
         setScannedVehicleId(vehicleId);
         setShowPaymentModal(true);
+        
+        // 3. Alert the user to complete the process.
+        alert("Scan successful! Please enter your destination to finalize the fare and complete your payment.");
+
       } else {
         setError(`Scanned QR code is not valid.`);
       }
@@ -90,7 +108,6 @@ function HomePage() {
     }
   };
 
-  // --- STEP 1 of payment: Calculate the fare ---
   const handleCalculateFare = async () => {
     if (!destinationInModal) {
       setModalError('Please enter a destination.');
@@ -100,7 +117,21 @@ function HomePage() {
     setModalError('');
     try {
       const { data } = await API.post("/api/trips/calculate-fare", { destination: destinationInModal });
-      setFareAmount(data.amount); // Show the fare to the user
+      
+      setCalculatedFareAmount(data.amount); 
+      setFareAmount(data.amount); 
+
+      // --- THIS IS THE FIX ---
+      // Update the existing pendingTrip in localStorage with the correct fare and destination.
+      const updatedPendingTrip = {
+          vehicleId: scannedVehicleId,
+          destination: destinationInModal,
+          amount: data.amount,
+          calculatedFare: data.amount,
+          createdAt: JSON.parse(localStorage.getItem('pendingTrip')).createdAt // Keep original timestamp
+      };
+      localStorage.setItem('pendingTrip', JSON.stringify(updatedPendingTrip));
+
     } catch (err) {
       setModalError(err.response?.data?.msg || "Could not calculate fare.");
     } finally {
@@ -108,7 +139,6 @@ function HomePage() {
     }
   };
 
-  // --- STEP 2 of payment: Confirm and charge the user ---
   const handleConfirmPayment = async () => {
     setIsProcessing(true);
     setModalError('');
@@ -117,12 +147,18 @@ function HomePage() {
           amount: fareAmount, 
           description: `Trip to ${destinationInModal}` 
       });
+
       await API.post("/api/trips", { 
           destination: destinationInModal, 
-          fare: fareAmount 
+          amountPaid: fareAmount,
+          calculatedFare: calculatedFareAmount
       });
+      
       setPaymentResult({ status: 'success', message: chargeData.message });
       setBalance(chargeData.newBalance);
+      localStorage.removeItem('pendingTrip');
+      setHasExpiredDue(false);
+
     } catch (err) {
       const errorMessage = err.response?.data?.msg || "An unexpected error occurred.";
       setPaymentResult({ status: 'error', message: errorMessage });
@@ -136,6 +172,7 @@ function HomePage() {
     setScannedVehicleId(null);
     setDestinationInModal("");
     setFareAmount(null);
+    setCalculatedFareAmount(null); 
     setPaymentResult({ status: null, message: '' });
     setModalError('');
   };

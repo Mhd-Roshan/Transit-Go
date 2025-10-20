@@ -8,11 +8,12 @@ const router = express.Router();
 // @desc    Create a new route with stops
 // @access  Private (Admin)
 router.post('/', authMiddleware, async (req, res) => {
-  // Now accepts 'stops' array
-  const { routeName, startPoint, endPoint, price, stops } = req.body;
+  // --- THIS IS THE FIX ---
+  // Now accepts 'stops' array instead of a single 'price'
+  const { routeName, startPoint, endPoint, stops } = req.body;
 
-  if (!routeName || !startPoint || !endPoint || !price || !stops) {
-    return res.status(400).json({ msg: 'Please enter all fields, including stops.' });
+  if (!routeName || !startPoint || !endPoint || !stops || !Array.isArray(stops) || stops.length === 0) {
+    return res.status(400).json({ msg: 'Please enter all fields, including at least one stop.' });
   }
 
   try {
@@ -20,7 +21,6 @@ router.post('/', authMiddleware, async (req, res) => {
       routeName,
       startPoint,
       endPoint,
-      price,
       stops,
     });
 
