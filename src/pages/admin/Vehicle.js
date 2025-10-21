@@ -18,6 +18,12 @@ function VehicleManagementPage() {
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [vehicleIdError, setVehicleIdError] = useState("");
+  
+  // --- THIS IS THE FIX ---
+  // State to manage if the main form is in "edit mode"
+  const [editMode, setEditMode] = useState(false);
+  const [currentVehicleDbId, setCurrentVehicleDbId] = useState(null);
+
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState(null);
   const [showQRModal, setShowQRModal] = useState(false);
@@ -42,6 +48,24 @@ function VehicleManagementPage() {
   useEffect(() => {
     fetchVehicles();
   }, []);
+  
+  const formatDateForInput = (dateString) => {
+    if (!dateString) return "";
+    return new Date(dateString).toISOString().split('T')[0];
+  };
+
+  const clearForm = () => {
+    setVehicleId("");
+    setModel("");
+    setCapacity("");
+    setSource("");
+    setDestination("");
+    setRegistrationDate("");
+    setVehicleIdError("");
+    setEditMode(false);
+    setCurrentVehicleDbId(null);
+    setError("");
+  };
 
   const handleVehicleIdChange = (e) => {
     const value = e.target.value.toUpperCase();
@@ -53,7 +77,36 @@ function VehicleManagementPage() {
       setVehicleIdError("Invalid format. Use format like KL08AZ1234.");
     }
   };
+  
+  // --- THIS IS THE FIX: Function to check for existing vehicle ID ---
+  const handleVehicleIdBlur = () => {
+    if (!vehicleId || vehicleIdError) {
+      return; // Don't check if the field is empty or format is invalid
+    }
+    const existingVehicle = vehicles.find(v => v.vehicleId === vehicleId);
+    if (existingVehicle) {
+      // Vehicle exists, enter edit mode and pre-fill form
+      setModel(existingVehicle.model);
+      setCapacity(existingVehicle.capacity);
+      setSource(existingVehicle.source);
+      setDestination(existingVehicle.destination);
+      setRegistrationDate(formatDateForInput(existingVehicle.registrationDate));
+      setEditMode(true);
+      setCurrentVehicleDbId(existingVehicle._id);
+    } else {
+      // Vehicle does not exist, ensure we are in create mode
+      // and clear other fields in case user is changing from an existing ID to a new one
+      setModel("");
+      setCapacity("");
+      setSource("");
+      setDestination("");
+      setRegistrationDate("");
+      setEditMode(false);
+      setCurrentVehicleDbId(null);
+    }
+  };
 
+  // --- THIS IS THE FIX: Unified form submission handler ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (vehicleIdError) return;
@@ -62,27 +115,30 @@ function VehicleManagementPage() {
       return;
     }
     setIsSubmitting(true);
+    setError("");
+    
+    const vehicleData = { vehicleId, model, capacity, source, destination, registrationDate };
+    const token = localStorage.getItem("token");
+    const headers = { headers: { Authorization: `Bearer ${token}` } };
+
     try {
-      const token = localStorage.getItem("token");
-      const res = await axios.post(
-        "http://localhost:5000/api/vehicles",
-        { vehicleId, model, capacity, source, destination, registrationDate },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setVehicles([res.data, ...vehicles]);
-      setVehicleId("");
-      setModel("");
-      setCapacity("");
-      setSource("");
-      setDestination("");
-      setRegistrationDate("");
-      setError("");
+      if (editMode) {
+        // --- UPDATE EXISTING VEHICLE ---
+        const res = await axios.put(`http://localhost:5000/api/vehicles/${currentVehicleDbId}`, vehicleData, headers);
+        setVehicles(vehicles.map(v => v._id === currentVehicleDbId ? res.data : v));
+      } else {
+        // --- CREATE NEW VEHICLE ---
+        const res = await axios.post("http://localhost:5000/api/vehicles", vehicleData, headers);
+        setVehicles([res.data, ...vehicles]);
+      }
+      clearForm(); // Clear form on successful submission
     } catch (err) {
-      setError(err.response?.data?.msg || "Failed to register vehicle.");
+      setError(err.response?.data?.msg || `Failed to ${editMode ? 'update' : 'register'} vehicle.`);
     } finally {
       setIsSubmitting(false);
     }
   };
+
 
   const handleEditClick = (vehicle) => {
     const regDate = vehicle.registrationDate ? new Date(vehicle.registrationDate).toISOString().split('T')[0] : '';
@@ -154,7 +210,20 @@ function VehicleManagementPage() {
           {error && <p className="error-message">{error}</p>}
           <form onSubmit={handleSubmit}>
             <div className="form-row">
-              <div className="form-group"><label htmlFor="vehicleId">Vehicle ID / Number</label><input type="text" id="vehicleId" value={vehicleId} onChange={handleVehicleIdChange} className={vehicleIdError ? 'input-error' : ''} disabled={isSubmitting} />{vehicleIdError && <p className="input-error-message">{vehicleIdError}</p>}</div>
+              <div className="form-group">
+                <label htmlFor="vehicleId">Vehicle ID / Number</label>
+                <input 
+                  type="text" 
+                  id="vehicleId" 
+                  value={vehicleId} 
+                  onChange={handleVehicleIdChange}
+                  onBlur={handleVehicleIdBlur} // <<-- ADDED ONBLUR EVENT
+                  className={vehicleIdError ? 'input-error' : ''} 
+                  disabled={isSubmitting} 
+                />
+                {vehicleIdError && <p className="input-error-message">{vehicleIdError}</p>}
+                {editMode && <p className="input-error-message" style={{color: 'var(--admin-primary)'}}>Update mode: Modifying existing vehicle.</p>}
+              </div>
               <div className="form-group"><label htmlFor="model">Vehicle Model</label><input type="text" id="model" value={model} onChange={(e) => setModel(e.target.value)} disabled={isSubmitting} /></div>
               <div className="form-group"><label htmlFor="capacity">Capacity</label><input type="number" id="capacity" value={capacity} onChange={(e) => setCapacity(e.target.value)} disabled={isSubmitting} /></div>
             </div>
@@ -163,18 +232,21 @@ function VehicleManagementPage() {
               <div className="form-group"><label htmlFor="destination">Destination</label><input type="text" id="destination" value={destination} onChange={(e) => setDestination(e.target.value)} disabled={isSubmitting} /></div>
               <div className="form-group"><label htmlFor="registrationDate">Registration Date</label><input type="date" id="registrationDate" value={registrationDate} onChange={(e) => setRegistrationDate(e.target.value)} disabled={isSubmitting} /></div>
             </div>
-            <button type="submit" className="register-btn" disabled={isSubmitting}><span className="material-icons">add_circle</span>{isSubmitting ? "Registering..." : "Register Vehicle"}</button>
+            {/* --- THIS IS THE FIX: DYNAMIC BUTTON --- */}
+            <button type="submit" className="register-btn" disabled={isSubmitting}>
+                <span className="material-icons">{editMode ? 'save' : 'add_circle'}</span>
+                {isSubmitting ? "Submitting..." : (editMode ? "Update Vehicle Details" : "Register Vehicle")}
+            </button>
           </form>
         </div>
         
-        <h3 className="section-title">Registered Vehicles</h3>
+        <h3 className="section-title">Assigned Vehicles</h3>
         {loading ? <p className="loading-text">Loading...</p> : (
           <div className="vehicles-list">
             {vehicles.map((v, index) => (
               <div key={v._id} className="vehicle-card" style={{ animationDelay: `${index * 50}ms` }}>
                 <div className="vehicle-card-header">
                     <p className="vehicle-main-id">{v.vehicleId}</p>
-                    {/* --- SIMPLIFIED AND CORRECTED LOGIC --- */}
                     <span className={`status-badge ${v.status ? v.status.toLowerCase().replace(/\s+/g, '-') : 'inactive'}`}>
                       {v.status || 'Inactive'}
                     </span>

@@ -54,6 +54,19 @@ router.get('/active', authMiddleware, async (req, res) => {
 router.post('/', authMiddleware, async (req, res) => {
   const { operatorId, vehicleId } = req.body;
   try {
+    // --- THIS IS THE FIX: Add server-side validation ---
+    // Check if the vehicle is already assigned
+    const vehicleInUse = await Assignment.findOne({ vehicle: vehicleId });
+    if (vehicleInUse) {
+      return res.status(400).json({ msg: 'This vehicle is already assigned to another operator.' });
+    }
+    // The schema enforces operator uniqueness, but an extra check is good practice
+    const operatorInUse = await Assignment.findOne({ operator: operatorId });
+    if (operatorInUse) {
+      return res.status(400).json({ msg: 'This operator is already assigned to another vehicle.' });
+    }
+    // --- END OF FIX ---
+
     const newAssignment = new Assignment({
       operator: operatorId,
       vehicle: vehicleId,
@@ -67,6 +80,10 @@ router.post('/', authMiddleware, async (req, res) => {
     res.status(201).json(populatedAssignment);
   } catch (err) {
     console.error("Error creating assignment:", err.message);
+    // The unique constraint on the schema will also throw an error which is caught here
+    if (err.code === 11000) {
+      return res.status(400).json({ msg: 'This vehicle or operator is already assigned.' });
+    }
     res.status(500).send('Server Error');
   }
 });

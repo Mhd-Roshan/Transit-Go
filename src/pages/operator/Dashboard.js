@@ -46,9 +46,8 @@ const WeatherDisplay = () => {
 };
 
 const RadialProgress = ({ progress }) => {
-  // MODIFICATION 1: Reduced radius for a smaller circle
   const radius = 45; 
-  const stroke = 7; // Slightly reduced stroke for better proportion
+  const stroke = 7; 
   const normalizedRadius = radius - stroke * 2;
   const circumference = normalizedRadius * 2 * Math.PI;
   const strokeDashoffset = circumference - (progress / 100) * circumference;
@@ -83,7 +82,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [liveEarnings, setLiveEarnings] = useState(0);
-  const [simulatedPassengers, setSimulatedPassengers] = useState(0);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   const { completedStops, isTripActive } = useTrip();
 
@@ -109,28 +108,33 @@ const Dashboard = () => {
   }, []);
 
   useEffect(() => {
+    const timerId = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timerId);
+  }, []);
+
+  // --- THIS IS THE FIX: Modified logic for earnings ---
+  useEffect(() => {
     let intervalId = null;
     
+    // 1. If the trip is active, start simulating earnings.
     if (isTripActive) {
       intervalId = setInterval(() => {
-        setLiveEarnings((prev) =>
-          Math.min(prev + Math.random() * (150 - 20) + 20, DAILY_GOAL + 500)
-        );
-        setSimulatedPassengers((p) => p + Math.floor(Math.random() * 3) + 1);
+        setLiveEarnings((prev) => prev + Math.random() * (150 - 20) + 20);
       }, 7000);
     } else {
-      if (completedStops.size === schedule.length) {
-        setLiveEarnings((prev) => Math.max(prev, DAILY_GOAL));
-      } else {
+      // 2. If trip is NOT active and NOT complete (stopped early), reset earnings.
+      if (completedStops.size < schedule.length) {
         setLiveEarnings(0);
-        setSimulatedPassengers(0);
       }
+      // 3. If trip is NOT active and IS complete, the earnings value persists.
     }
     
+    // 4. Cleanup function stops the simulation when the trip ends.
     return () => clearInterval(intervalId);
   }, [isTripActive, completedStops.size]); 
 
-  const earningsProgress = (liveEarnings / DAILY_GOAL) * 100;
+  const tripProgress = Math.min((completedStops.size > 0 ? completedStops.size - 1 : 0) * 12.5, 100);
+  
   const nextStopIndex = isTripActive
     ? schedule.findIndex((_, index) => !completedStops.has(index))
     : -1;
@@ -174,7 +178,12 @@ const Dashboard = () => {
           style={{ '--stagger-delay': '100ms' }}
         >
           <Card.Body>
-            <h3 className="vehicle-id-header">{vehicle.vehicleId}</h3>
+            <div>
+              <h3 className="vehicle-id-header">{vehicle.vehicleId}</h3>
+              <p className="current-time-display">
+                {currentTime.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+              </p>
+            </div>
             <p className="route-path-header">
               <span>{source.split(' ')[0]}</span>{' '}
               <span className="material-icons">arrow_right_alt</span>{' '}
@@ -216,7 +225,7 @@ const Dashboard = () => {
           <Card.Body>
             <Card.Title>Live Status</Card.Title>
             <div className="earnings-container">
-              <RadialProgress progress={earningsProgress} />
+              <RadialProgress progress={tripProgress} />
               <div className="earnings-details">
                 <span className="earnings-amount">
                   ₹
@@ -228,14 +237,6 @@ const Dashboard = () => {
               </div>
             </div>
             <div className="stats-grid">
-              {/* MODIFICATION 2: Wrapped value/label in a div for better alignment */}
-              <div className="stat-item">
-                <span className="material-icons">groups</span>
-                <div className="stat-details">
-                  <span className="stat-value">{simulatedPassengers}</span>
-                  <span className="stat-label">Passengers</span>
-                </div>
-              </div>
               <div className="stat-item">
                 <span className="material-icons">tour</span>
                 <div className="stat-details">
@@ -305,7 +306,7 @@ const Dashboard = () => {
   return (
     <div className="operator-dashboard-page">
       <div className="page-header">
-        <h2 className="page-title">Live Command Center</h2>
+        <h2 className="page-title">Operator View Control</h2>
         <p className="page-subtitle">Your real-time mission overview.</p>
       </div>
       {renderContent()}

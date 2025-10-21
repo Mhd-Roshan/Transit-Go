@@ -11,7 +11,8 @@ import express from 'express';
     try {
       let vehicle = await Vehicle.findOne({ vehicleId });
       if (vehicle) {
-        return res.status(400).json({ msg: 'A vehicle with this ID already exists.' });
+        // --- THIS IS THE FIX: A more informative error message ---
+        return res.status(400).json({ msg: 'This Vehicle ID is already registered. Please use the edit function to update details.' });
       }
       vehicle = new Vehicle({ vehicleId, model, capacity, source, destination, registrationDate });
       await vehicle.save();
