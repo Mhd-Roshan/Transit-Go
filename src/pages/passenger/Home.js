@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Modal, Spinner, Alert } from 'react-bootstrap';
@@ -30,6 +31,9 @@ function HomePage() {
   const [upcomingBuses, setUpcomingBuses] = useState([]);
   const [showScanner, setShowScanner] = useState(false);
   const [hasExpiredDue, setHasExpiredDue] = useState(false);
+
+  // --- CHANGE: New states for scanner modal UI ---
+  const [scanStatus, setScanStatus] = useState('idle'); // 'idle', 'scanning', 'success'
 
   // State specifically for the payment modal
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -70,42 +74,44 @@ function HomePage() {
     fetchAllData();
   }, []);
   
+  // --- CHANGE: Updated scan handler to manage UI state instead of using alert() ---
   const handleScanSuccess = (decodedText) => {
-    setShowScanner(false);
-    setError(''); 
-    try {
-      const params = new URLSearchParams(
-        decodedText.includes('?') ? decodedText.substring(decodedText.indexOf('?')) : decodedText
-      );
-      const vehicleId = params.get('vehicle');
+    // Show a success state inside the modal
+    setScanStatus('success');
 
-      if (vehicleId) {
-        // --- THIS IS THE FIX ---
-        // 1. Instantly create a placeholder pending trip in localStorage.
-        const MINIMUM_FARE = 20; // Define a minimum fare
-        const placeholderTrip = {
-            vehicleId: vehicleId,
-            destination: "Not Set",
-            amount: MINIMUM_FARE,
-            calculatedFare: MINIMUM_FARE,
-            createdAt: new Date().toISOString()
-        };
-        localStorage.setItem('pendingTrip', JSON.stringify(placeholderTrip));
+    // After a short delay, close the scanner and open the payment modal
+    setTimeout(() => {
+        setShowScanner(false);
+        setScanStatus('idle'); // Reset for next time
 
-        // 2. Set state to open the modal.
-        setScannedVehicleId(vehicleId);
-        setShowPaymentModal(true);
-        
-        // 3. Alert the user to complete the process.
-        alert("Scan successful! Please enter your destination to finalize the fare and complete your payment.");
-
-      } else {
-        setError(`Scanned QR code is not valid.`);
-      }
-    } catch (error) {
-      console.error("Error processing QR Code:", error);
-      setError("Could not process the scanned QR Code. Please try again.");
-    }
+        // Process the QR code data
+        try {
+            const params = new URLSearchParams(
+              decodedText.includes('?') ? decodedText.substring(decodedText.indexOf('?')) : decodedText
+            );
+            const vehicleId = params.get('vehicle');
+      
+            if (vehicleId) {
+              const MINIMUM_FARE = 20;
+              const placeholderTrip = {
+                  vehicleId: vehicleId,
+                  destination: "Not Set",
+                  amount: MINIMUM_FARE,
+                  calculatedFare: MINIMUM_FARE,
+                  createdAt: new Date().toISOString()
+              };
+              localStorage.setItem('pendingTrip', JSON.stringify(placeholderTrip));
+      
+              setScannedVehicleId(vehicleId);
+              setShowPaymentModal(true);
+            } else {
+              setError(`Scanned QR code is not valid.`);
+            }
+          } catch (error) {
+            console.error("Error processing QR Code:", error);
+            setError("Could not process the scanned QR Code. Please try again.");
+          }
+    }, 2000); // 2-second delay to show the success message
   };
 
   const handleCalculateFare = async () => {
@@ -121,14 +127,12 @@ function HomePage() {
       setCalculatedFareAmount(data.amount); 
       setFareAmount(data.amount); 
 
-      // --- THIS IS THE FIX ---
-      // Update the existing pendingTrip in localStorage with the correct fare and destination.
       const updatedPendingTrip = {
           vehicleId: scannedVehicleId,
           destination: destinationInModal,
           amount: data.amount,
           calculatedFare: data.amount,
-          createdAt: JSON.parse(localStorage.getItem('pendingTrip')).createdAt // Keep original timestamp
+          createdAt: JSON.parse(localStorage.getItem('pendingTrip')).createdAt
       };
       localStorage.setItem('pendingTrip', JSON.stringify(updatedPendingTrip));
 
@@ -176,6 +180,16 @@ function HomePage() {
     setPaymentResult({ status: null, message: '' });
     setModalError('');
   };
+
+  // --- CHANGE: New helper functions to manage scanner modal state ---
+  const openScanner = () => {
+    setScanStatus('scanning');
+    setShowScanner(true);
+  }
+  const closeScanner = () => {
+    setShowScanner(false);
+    setScanStatus('idle');
+  }
 
   const renderModalContent = () => {
     if (paymentResult.status) {
@@ -254,7 +268,7 @@ function HomePage() {
                 <button className="btn btn-danger" onClick={() => navigate('/payment')}>Clear Due</button>
               </div>
             ) : (
-              <div className="scan-pay-card" onClick={() => setShowScanner(true)}>
+              <div className="scan-pay-card" onClick={openScanner}>
                 <div className="scan-pay-icon"><span className="material-icons-outlined">qr_code_scanner</span></div>
                 <div className="scan-pay-text">
                     <h4>Scan & Pay</h4>
@@ -300,11 +314,26 @@ function HomePage() {
           </div>
         </section>
 
-        <Modal show={showScanner} onHide={() => setShowScanner(false)} centered>
+        {/* --- CHANGE: Modal content is now dynamic based on scanStatus --- */}
+        <Modal show={showScanner} onHide={closeScanner} centered>
           <Modal.Header closeButton><Modal.Title>Scan Bus QR Code</Modal.Title></Modal.Header>
-          <Modal.Body>
-            {showScanner && <QrScanner onScanSuccess={handleScanSuccess} />}
-            <p className="text-center mt-3">Point your camera at the QR code on the bus.</p>
+          <Modal.Body className="scanner-modal-body">
+            {scanStatus === 'scanning' && (
+              <>
+                <QrScanner onScanSuccess={handleScanSuccess} />
+                <p className="scanner-warning">
+                  <span className="material-icons-outlined">smart_toy</span>
+                  AI-powered scanner is active. Please hold steady.
+                </p>
+              </>
+            )}
+            {scanStatus === 'success' && (
+              <div className="scan-success-view">
+                <span className="material-icons-outlined success-icon">check_circle</span>
+                <h4>Scan Successful!</h4>
+                <p>Please enter your destination to finalize the fare and complete your payment.</p>
+              </div>
+            )}
           </Modal.Body>
         </Modal>
 

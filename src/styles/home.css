@@ -53,8 +53,6 @@
     grid-template-columns: repeat(2, 1fr); /* Two columns on larger screens */
   }
 
-  /* --- THIS IS THE FIX --- */
-  /* Target the direct children of the grid */
   .home-hero-grid > .balance-card {
     order: 2; /* Make the balance card the second item */
   }
@@ -135,7 +133,6 @@
   line-height: 1.4;
 }
 
-/* --- THIS IS THE FIX --- */
 /* Due Card Specifics */
 .due-card {
   background-color: var(--status-red-bg);
@@ -240,6 +237,53 @@
 .payment-result p { color: var(--passenger-text-secondary); margin-bottom: 1.5rem; }
 .payment-result.success .result-icon, .payment-result.success h4 { color: var(--status-green); }
 .payment-result.error .result-icon, .payment-result.error h4 { color: var(--status-red); }
+
+/* --- CHANGE: New styles for scanner modal --- */
+.scanner-modal-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 350px; 
+  padding: 1rem !important;
+}
+.scanner-warning {
+  margin-top: 1.5rem;
+  font-size: 0.85rem;
+  color: var(--passenger-text-secondary);
+  text-align: center;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: var(--passenger-input-bg);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+}
+.scanner-warning .material-icons-outlined {
+  font-size: 1rem;
+}
+.scan-success-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  color: var(--passenger-text-primary);
+  animation: fade-in 0.5s ease-out;
+}
+.scan-success-view .success-icon {
+  font-size: 4.5rem;
+  color: var(--status-green);
+  margin-bottom: 1rem;
+}
+.scan-success-view h4 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+}
+.scan-success-view p {
+  color: var(--passenger-text-secondary);
+  max-width: 300px;
+}
 
 
 /* --- 9. Responsive Tweaks --- */
