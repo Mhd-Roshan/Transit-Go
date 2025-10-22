@@ -43,10 +43,10 @@ function OperatorRoutesPage() {
 
   const {
     isTripActive, 
-    // --- THIS IS THE FIX: Get the setter function from the context ---
     setIsTripActive,
     currentBusPosition, selectedVehicle, setSelectedVehicle,
-    startSimulation, endSimulation, currentDirection
+    startSimulation, endSimulation
+    // --- REMOVED: currentDirection is no longer needed ---
   } = useTrip();
 
   const mapRef = useRef(null);
@@ -67,19 +67,17 @@ function OperatorRoutesPage() {
       setMyAssignment(assignmentData);
       setSelectedVehicle(assignmentData.vehicle);
 
-      // --- THIS IS THE FIX: Sync frontend state with backend state on load ---
       if (assignmentData.vehicle.status === 'On Route') {
         setIsTripActive(true);
       } else {
         setIsTripActive(false);
       }
-      // --- END OF FIX ---
 
     } catch (err) {
       if (err.response?.status === 404) {
         setMyAssignment(null);
         setSelectedVehicle(null);
-        setIsTripActive(false); // Ensure state is false if no assignment
+        setIsTripActive(false);
       } else {
         setError(err.response?.data?.msg || "Could not load your assignment details.");
       }
@@ -121,10 +119,9 @@ function OperatorRoutesPage() {
         );
     }
 
+    // --- THIS IS THE SIMPLIFIED DISPLAY LOGIC ---
     const source = selectedVehicle.source || 'Adivaram';
     const destination = selectedVehicle.destination || 'Pulpally';
-    const displaySource = currentDirection === 'forward' ? source : destination;
-    const displayDestination = currentDirection === 'forward' ? destination : source;
 
     return (
       <div className="live-trip-card">
@@ -142,9 +139,9 @@ function OperatorRoutesPage() {
           <div className="route-details">
             <p className="route-label">{selectedVehicle.model} ({selectedVehicle.vehicleId})</p>
             <h3 className="route-path">
-              <span>{displaySource}</span>
+              <span>{source}</span>
               <span className="material-icons">east</span>
-              <span>{displayDestination}</span>
+              <span>{destination}</span>
             </h3>
           </div>
           

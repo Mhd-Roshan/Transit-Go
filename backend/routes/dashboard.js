@@ -5,14 +5,13 @@ import Vehicle from '../models/Vehicle.js';
 import Collection from '../models/Collection.js'; 
 import Transaction from '../models/Transaction.js';
 import Trip from '../models/Trip.js';
-import Assignment from '../models/Assignment.js'; // --- THIS IS THE FIX ---
+import Assignment from '../models/Assignment.js'; // Import the Assignment model
 
 const router = express.Router();
 
-// --- NEW ROUTE for Operator Earnings ---
+// ... (other routes like /operator-earnings remain the same) ...
 // @route   GET api/dashboard/operator-earnings
 // @desc    Get today's earnings for the logged-in operator
-// @access  Private (Operator)
 router.get('/operator-earnings', authMiddleware, async (req, res) => {
     try {
         const assignment = await Assignment.findOne({ operator: req.user.id });
@@ -38,13 +37,32 @@ router.get('/operator-earnings', authMiddleware, async (req, res) => {
     }
 });
 
+
 // @route   GET api/dashboard/revenue-report
 // @desc    Get a combined list of passenger payments and operator collections
 router.get('/revenue-report', authMiddleware, async (req, res) => {
     try {
-        const { startDate, endDate, operatorId, vehicleId } = req.query;
-        let combinedReport = [];
+        // --- THIS IS THE FIX (PART 1) ---
+        // Use `let` to allow modification of vehicleId
+        let { startDate, endDate, operatorId, vehicleId } = req.query;
+        let effectiveVehicleId = vehicleId;
 
+        // If an operator is selected, find their assigned vehicle.
+        // This will override any specific vehicle filter.
+        if (operatorId) {
+            const assignment = await Assignment.findOne({ operator: operatorId });
+            if (!assignment) {
+                // If the operator has no assignment, they can't have any revenue.
+                return res.json([]);
+            }
+            // Use the operator's assigned vehicle ID for all subsequent filtering.
+            effectiveVehicleId = assignment.vehicle.toString();
+        }
+        // --- END OF FIX (PART 1) ---
+
+        let combinedReport = [];
+        
+        // --- PASSENGER PAYMENTS (Transactions) ---
         const transactionQuery = { amount: { $lt: 0 } }; 
         if (startDate || endDate) {
             transactionQuery.createdAt = {};
@@ -52,31 +70,30 @@ router.get('/revenue-report', authMiddleware, async (req, res) => {
             if (endDate) transactionQuery.createdAt.$lte = new Date(`${endDate}T23:59:59.999Z`);
         }
         
+        // Find all trips related to the effective vehicle, if one is specified
+        let relevantTripIds = [];
+        if (effectiveVehicleId) {
+            const relevantTrips = await Trip.find({ vehicle: effectiveVehicleId }).select('_id');
+            relevantTripIds = relevantTrips.map(t => t._id);
+            transactionQuery.trip = { $in: relevantTripIds };
+        }
+
         const transactions = await Transaction.find(transactionQuery)
           .populate('user', 'fullName')
           .populate({ 
             path: 'trip', 
-            populate: { 
-              path: 'vehicle', 
-              select: 'vehicleId' 
-            } 
+            populate: { path: 'vehicle', select: 'vehicleId' } 
           });
         
         transactions.forEach(tx => {
-            const tripVehicleId = tx.trip?.vehicle?._id;
-            if (vehicleId && (!tripVehicleId || tripVehicleId.toString() !== vehicleId)) return;
-            
             combinedReport.push({
-                _id: tx._id, 
-                type: 'Passenger Payment', 
-                amount: Math.abs(tx.amount),
-                date: tx.createdAt,
-                description: tx.description, 
-                userName: tx.user?.fullName, 
-                vehicleId: tx.trip?.vehicle?.vehicleId,
+                _id: tx._id, type: 'Passenger Payment', amount: Math.abs(tx.amount),
+                date: tx.createdAt, description: tx.description, 
+                userName: tx.user?.fullName, vehicleId: tx.trip?.vehicle?.vehicleId,
             });
         });
 
+        // --- OPERATOR CASH COLLECTIONS ---
         const collectionQuery = {};
         if (startDate || endDate) {
             collectionQuery.collectionDate = {};
@@ -84,9 +101,15 @@ router.get('/revenue-report', authMiddleware, async (req, res) => {
             if (endDate) collectionQuery.collectionDate.$lte = new Date(`${endDate}T23:59:59.999Z`);
         }
         if (operatorId) collectionQuery.operator = operatorId;
-        if (vehicleId) collectionQuery.vehicle = vehicleId;
 
-        const collections = await Collection.find(collectionQuery).populate('operator', 'fullName').populate('vehicle', 'vehicleId');
+        // --- THIS IS THE FIX (PART 2) ---
+        // Also filter collections by the effective vehicle ID
+        if (effectiveVehicleId) collectionQuery.vehicle = effectiveVehicleId;
+        // --- END OF FIX (PART 2) ---
+
+        const collections = await Collection.find(collectionQuery)
+            .populate('operator', 'fullName')
+            .populate('vehicle', 'vehicleId');
 
         collections.forEach(col => {
             combinedReport.push({
@@ -104,6 +127,7 @@ router.get('/revenue-report', authMiddleware, async (req, res) => {
 });
 
 
+// ... (the rest of the file remains the same) ...
 // @route   GET api/dashboard/stats
 // @desc    Get key statistics for the admin dashboard
 router.get('/stats', authMiddleware, async (req, res) => {

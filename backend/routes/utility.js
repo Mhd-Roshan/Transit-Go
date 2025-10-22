@@ -8,7 +8,7 @@ const router = express.Router();
 // @access  Public
 router.get('/seed-fares', async (req, res) => {
     try {
-        // Define the complete fare structure for the Wayanad route
+        // This object defines the entire fare chart for one route
         const wayanadRoute = {
             routeName: 'Wayanad Express',
             startPoint: 'Adivaram',

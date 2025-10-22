@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Spinner } from 'react-bootstrap';
 import PassengerLayout from '../../layouts/PassengerLayout';
@@ -6,11 +6,12 @@ import API from '../../api';
 import '../../styles/timings.css';
 
 function TimingsPage() {
-  const [liveBuses, setLiveBuses] = useState([]); // Changed state name for clarity
+  const [liveBuses, setLiveBuses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
+  const pollingIntervalRef = useRef(null);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -19,9 +20,8 @@ function TimingsPage() {
       return;
     }
 
-    // --- FIX: Fetch from the new '/api/vehicles/live' endpoint ---
-    const fetchLiveBuses = async () => {
-      setLoading(true);
+    const fetchLiveBuses = async (isInitialLoad = false) => {
+      if (isInitialLoad) setLoading(true);
       setError('');
       try {
         const res = await API.get("/vehicles/live");
@@ -29,15 +29,24 @@ function TimingsPage() {
       } catch (err) {
         console.error("Failed to load live bus data:", err);
         setError(`Failed to load live bus data. Please try again later.`);
+        clearInterval(pollingIntervalRef.current); // Stop polling on error
       } finally {
-        setLoading(false);
+        if (isInitialLoad) setLoading(false);
       }
     };
 
-    fetchLiveBuses();
+    fetchLiveBuses(true); // Initial fetch with loading indicator
+
+    // --- FIX: Set up polling to fetch live data every 15 seconds ---
+    pollingIntervalRef.current = setInterval(() => {
+      fetchLiveBuses(false); // Subsequent fetches without loading indicator
+    }, 15000); // Poll every 15 seconds
+
+    // Cleanup function: clear interval when component unmounts
+    return () => clearInterval(pollingIntervalRef.current);
+
   }, [navigate]);
 
-  // --- FIX: Update filtering logic for the new data structure ---
   const filteredBuses = useMemo(() => 
     liveBuses.filter(bus =>
       (bus.model && bus.model.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -65,7 +74,6 @@ function TimingsPage() {
       );
     }
     return (
-      // --- FIX: Render real-time data from live buses ---
       <div className="bus-list">
         {filteredBuses.map((bus, index) => (
             <div key={bus._id} className="bus-card" style={{ animationDelay: `${index * 50}ms` }}>

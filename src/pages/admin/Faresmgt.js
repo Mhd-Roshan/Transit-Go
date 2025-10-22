@@ -21,7 +21,6 @@ function Faresmgt() {
   useEffect(() => {
     const fetchFilterData = async () => {
       try {
-        // Use the new API client
         const [vehiclesRes, usersRes] = await Promise.all([
           API.get("/vehicles"),
           API.get("/users"),
@@ -47,7 +46,6 @@ function Faresmgt() {
           operatorId: filters.operatorId || undefined,
         };
 
-        // Use the new API client
         const res = await API.get(`/dashboard/revenue-report`, { params });
         setReportData(res.data);
       } catch (err) {
@@ -147,7 +145,8 @@ function Faresmgt() {
                     <p className="sub-detail">
                       By: {item.userName || 'N/A'}
                       {' • '}
-                      {new Date(item.date).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      {/* --- THIS IS THE DATE FORMAT FIX --- */}
+                      {new Date(item.date).toLocaleDateString('en-GB')}
                     </p>
                   </div>
                   <div className="collection-amount">

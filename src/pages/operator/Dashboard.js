@@ -1,6 +1,5 @@
-import React from 'react';
-import { useState, useEffect, useMemo } from 'react';
-import { Card, Spinner, Alert, Modal } from 'react-bootstrap'; // Import Modal
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { Card, Spinner, Alert, Modal } from 'react-bootstrap';
 import QRCode from 'react-qr-code';
 import { useTrip } from '../../context/TripContext';
 import API from '../../api';
@@ -51,15 +50,18 @@ const RadialProgress = ({ progress }) => {
 
 const Dashboard = () => {
   const [assignment, setAssignment] = useState(null);
+  // This state holds the live, polled data from the database.
+  const [liveVehicleData, setLiveVehicleData] = useState(null); 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [liveEarnings, setLiveEarnings] = useState(0);
   const [qrValue, setQrValue] = useState('');
   const [showQrModal, setShowQrModal] = useState(false);
+  const pollingRef = useRef(null);
 
   const { completedStops, isTripActive, tripSchedule } = useTrip();
 
-  // FIX 1: Fetch static assignment data only once on component mount
+  // Effect for the initial data load
   useEffect(() => {
     const fetchCoreData = async () => {
       setLoading(true);
@@ -67,6 +69,7 @@ const Dashboard = () => {
       try {
         const assignmentRes = await API.get('/assignments/my-assignment');
         setAssignment(assignmentRes.data);
+        setLiveVehicleData(assignmentRes.data.vehicle); // Set initial live data
       } catch (err) {
         if (err.response?.status === 404) setAssignment(null);
         else setError('Could not load assignment data.');
@@ -75,57 +78,60 @@ const Dashboard = () => {
       }
     };
     fetchCoreData();
+
+    // Cleanup polling when the component is unmounted
+    return () => clearInterval(pollingRef.current);
   }, []);
 
-  // FIX 1: Fetch dynamic earnings data and poll for updates periodically
+  // Effect to handle polling for live data when a trip is active
   useEffect(() => {
-    if (!assignment) return;
-
-    const fetchDynamicData = async () => {
+    const pollLiveData = async () => {
+      if (!assignment) return;
       try {
-        const earningsRes = await API.get('/dashboard/operator-earnings');
+        // Fetch both assignment (for vehicle data) and earnings
+        const [assignmentRes, earningsRes] = await Promise.all([
+          API.get('/assignments/my-assignment'),
+          API.get('/dashboard/operator-earnings')
+        ]);
+        setLiveVehicleData(assignmentRes.data.vehicle);
         setLiveEarnings(earningsRes.data.todayEarnings);
-      } catch (error) {
-        console.error("Failed to refresh earnings", error);
+      } catch (err) {
+        console.warn("Could not poll for live data.", err);
       }
     };
-    
-    fetchDynamicData(); 
 
-    const intervalId = setInterval(fetchDynamicData, 60000); // Poll every minute
+    if (isTripActive && assignment) {
+      // Start polling every 7 seconds for fresh data
+      pollingRef.current = setInterval(pollLiveData, 7000);
+    } else {
+      // Stop polling if the trip is not active
+      clearInterval(pollingRef.current);
+    }
 
-    return () => clearInterval(intervalId);
-  }, [assignment, isTripActive]);
+    return () => clearInterval(pollingRef.current);
+  }, [isTripActive, assignment]);
 
-  // FIX 2: Unify schedule source and generate dynamic QR code based on trip state
+
   const displaySchedule = useMemo(() => 
     tripSchedule.length > 0 ? tripSchedule : schedule, 
     [tripSchedule]
   );
 
+  // --- THE DEFINITIVE QR CODE FIX ---
+  // This effect generates the QR code based *only* on the live data from the database.
   useEffect(() => {
     if (!assignment?.vehicle) return;
     
-    const generateQr = () => {
-      let currentStopLocation = 'Unknown';
-      if (isTripActive && completedStops.size > 0) {
-        const lastCompletedIndex = Math.max(...completedStops);
-        currentStopLocation = displaySchedule[lastCompletedIndex]?.location || 'Unknown';
-      } else if (displaySchedule.length > 0) {
-        currentStopLocation = displaySchedule[0].location;
-      }
+    // Use the liveVehicleData's location from the database as the source of truth.
+    // Fallback to the vehicle's source if the live location isn't set yet (e.g., at the start).
+    const currentStopLocation = liveVehicleData?.currentLocation || assignment.vehicle.source || 'Start Point';
 
-      const qrUrl = `${window.location.origin}/pay?vehicle=${assignment.vehicle._id}&ts=${Date.now()}&loc=${encodeURIComponent(currentStopLocation)}`;
-      setQrValue(qrUrl);
-    };
+    const qrUrl = `${window.location.origin}/pay?vehicle=${assignment.vehicle._id}&ts=${Date.now()}&loc=${encodeURIComponent(currentStopLocation)}`;
+    setQrValue(qrUrl);
+    
+  }, [assignment, liveVehicleData]); // Re-generates QR whenever live DB data changes
 
-    generateQr();
-    const qrInterval = setInterval(generateQr, 60000); // Update QR every minute for timestamp
-    return () => clearInterval(qrInterval);
-  }, [assignment, isTripActive, completedStops, displaySchedule]);
-
-  // Update UI calculations to use the consistent `displaySchedule`
-  const tripProgress = Math.min((completedStops.size > 0 ? completedStops.size - 1 : 0) * (100 / (displaySchedule.length - 1 || 1)), 100);
+  const tripProgress = Math.min((completedStops.size / (displaySchedule.length || 1)) * 100, 100);
   const nextStopIndex = isTripActive ? displaySchedule.findIndex((_, index) => !completedStops.has(index)) : -1;
   
   const handleShowQrModal = () => setShowQrModal(true);

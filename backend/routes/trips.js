@@ -3,7 +3,7 @@ import authMiddleware from '../middleware/authMiddleware.js';
 import Trip from '../models/Trip.js';
 import User from '../models/User.js';
 import Vehicle from '../models/Vehicle.js';
-import Route from '../models/Fares.js';
+import { calculateFare } from '../utils/fareCalculator.js'; // Import the new utility
 import Transaction from '../models/Transaction.js';
 
 const router = express.Router();
@@ -12,8 +12,7 @@ const router = express.Router();
 const isQrCodeValid = (timestamp) => {
     const now = Date.now();
     const qrTime = parseInt(timestamp, 10);
-    // Increased validity to 10 minutes (600000ms) as the location data changes
-    return (now - qrTime) < 600000;
+    return (now - qrTime) < 600000; // 10 minute validity
 };
 
 
@@ -52,14 +51,9 @@ router.post('/scan-entry', authMiddleware, async (req, res) => {
         const vehicle = await Vehicle.findById(vehicleId);
         if (!vehicle) return res.status(404).json({ msg: 'Vehicle not found.' });
 
-        // --- THIS IS THE FIX ---
-        // A passenger should be able to board a bus if it is either 'Active' (waiting to start)
-        // or 'On Route' (already running the trip).
-        const allowedStatuses = ['Active', 'On Route'];
-        if (!allowedStatuses.includes(vehicle.status)) {
-            return res.status(400).json({ msg: 'This vehicle is not currently in service. Please choose another bus.' });
+        if (vehicle.status !== 'On Route') {
+            return res.status(400).json({ msg: 'This vehicle is not currently on its route. Please choose another bus.' });
         }
-        // --- END OF FIX ---
 
         const newTrip = new Trip({
             passenger: req.user.id, vehicle: vehicleId,
@@ -102,21 +96,11 @@ router.post('/scan-exit', authMiddleware, async (req, res) => {
         
         const origin = trip.origin;
         const destination = busLocation;
-        let fare = 20; // Set a base minimum fare
-
-        const originRegex = new RegExp(origin.trim(), 'i');
-        const route = await Route.findOne({ 'stops.stopName': originRegex });
-
-        if (route) {
-            const destinationRegex = new RegExp(destination.trim(), 'i');
-            const originStop = route.stops.find(s => originRegex.test(s.stopName));
-            const destStop = route.stops.find(s => destinationRegex.test(s.stopName));
-
-            if (originStop && destStop) {
-                const calculatedFare = Math.abs(destStop.fareFromStart - originStop.fareFromStart);
-                fare = Math.max(calculatedFare, 20); 
-            }
-        }
+        
+        // --- THIS IS THE NEW, CLEAN IMPLEMENTATION ---
+        // Call the dedicated utility function to handle all the complex logic.
+        const fare = await calculateFare(origin, destination);
+        // --- END OF NEW IMPLEMENTATION ---
 
         if (user.walletBalance < fare) {
             return res.status(402).json({ msg: `Insufficient balance. Fare is ₹${fare.toFixed(2)}. Please top up your wallet.` });
