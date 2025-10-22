@@ -295,3 +295,23 @@
     font-size: 2rem;
   }
 }
+
+/* --- THIS IS THE FIX: Styles for the disabled scan card --- */
+.scan-pay-card-disabled {
+  background-color: var(--passenger-input-bg);
+  cursor: not-allowed;
+  border-color: var(--passenger-border-color);
+  box-shadow: none;
+}
+.scan-pay-card-disabled:hover {
+  transform: none; /* Disable hover effect */
+  box-shadow: none;
+  border-color: var(--passenger-border-color);
+}
+.scan-pay-card-disabled .scan-pay-icon {
+  background-color: var(--passenger-text-secondary);
+}
+.scan-pay-card-disabled h4,
+.scan-pay-card-disabled p {
+  color: var(--passenger-text-secondary);
+}

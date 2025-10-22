@@ -10,7 +10,8 @@ const QrScanner = ({ onScanSuccess, onScanFailure }) => {
       const scanner = new Html5QrcodeScanner(
         'qr-reader',
         {
-          qrbox: { width: 250, height: 250 },
+          // --- THIS IS THE FIX: Increased the size of the scanning box ---
+          qrbox: { width: 300, height: 300 },
           fps: 10,
         },
         /* verbose= */ false
@@ -51,7 +52,7 @@ const QrScanner = ({ onScanSuccess, onScanFailure }) => {
     // The dependency array is empty to ensure this effect runs only once on mount.
   }, [onScanSuccess, onScanFailure]);
 
-  return <div id="qr-reader" style={{ border: 'none' }} />;
+  return <div id="qr-reader" style={{ border: 'none', width: '100%', maxWidth: '500px' }} />;
 };
 
 export default QrScanner;

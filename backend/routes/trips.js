@@ -12,7 +12,8 @@ const router = express.Router();
 const isQrCodeValid = (timestamp) => {
     const now = Date.now();
     const qrTime = parseInt(timestamp, 10);
-    return (now - qrTime) < 65000;
+    // Increased validity to 10 minutes (600000ms) as the location data changes
+    return (now - qrTime) < 600000;
 };
 
 
@@ -50,6 +51,15 @@ router.post('/scan-entry', authMiddleware, async (req, res) => {
 
         const vehicle = await Vehicle.findById(vehicleId);
         if (!vehicle) return res.status(404).json({ msg: 'Vehicle not found.' });
+
+        // --- THIS IS THE FIX ---
+        // A passenger should be able to board a bus if it is either 'Active' (waiting to start)
+        // or 'On Route' (already running the trip).
+        const allowedStatuses = ['Active', 'On Route'];
+        if (!allowedStatuses.includes(vehicle.status)) {
+            return res.status(400).json({ msg: 'This vehicle is not currently in service. Please choose another bus.' });
+        }
+        // --- END OF FIX ---
 
         const newTrip = new Trip({
             passenger: req.user.id, vehicle: vehicleId,
@@ -94,25 +104,19 @@ router.post('/scan-exit', authMiddleware, async (req, res) => {
         const destination = busLocation;
         let fare = 20; // Set a base minimum fare
 
-        // --- THIS IS THE NEW FARE CALCULATION LOGIC ---
-        // Find a route that contains BOTH the origin and destination stops
-        const route = await Route.findOne({
-            'stops.stopName': { $all: [origin, destination] }
-        });
+        const originRegex = new RegExp(origin.trim(), 'i');
+        const route = await Route.findOne({ 'stops.stopName': originRegex });
 
         if (route) {
-            const originStop = route.stops.find(s => s.stopName.toLowerCase() === origin.toLowerCase());
-            const destStop = route.stops.find(s => s.stopName.toLowerCase() === destination.toLowerCase());
+            const destinationRegex = new RegExp(destination.trim(), 'i');
+            const originStop = route.stops.find(s => originRegex.test(s.stopName));
+            const destStop = route.stops.find(s => destinationRegex.test(s.stopName));
 
-            // If both stops are found, calculate the fare difference
             if (originStop && destStop) {
                 const calculatedFare = Math.abs(destStop.fareFromStart - originStop.fareFromStart);
-                // Ensure fare is never below the minimum
                 fare = Math.max(calculatedFare, 20); 
             }
         }
-        // If no specific route is found, the default minimum fare of 20 will be used.
-        // --- END OF NEW LOGIC ---
 
         if (user.walletBalance < fare) {
             return res.status(402).json({ msg: `Insufficient balance. Fare is ₹${fare.toFixed(2)}. Please top up your wallet.` });

@@ -119,7 +119,7 @@ body {
 
 /* --- 5. Component-Specific Styling --- */
 
-/* Header & QR Cards */
+/* Header Card */
 .header-card .card-body { justify-content: space-between; }
 .vehicle-id-header {
   font-size: 2.5rem;
@@ -143,22 +143,29 @@ body {
   color: var(--op-text-secondary);
   margin: 0.5rem 0 0 0;
 }
-.header-info-footer { margin-top: auto; padding-top: 1.5rem; }
-.info-block-label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--op-text-secondary);
-}
-.info-block-value {
-  font-size: 1rem;
-  font-weight: 500;
-  color: var(--op-text-primary);
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-.qr-card .card-body { align-items: center; justify-content: center; }
+
+/* --- THIS IS THE FIX: QR CARD STYLES --- */
+.qr-card .card-body { align-items: center; justify-content: center; position: relative; }
 .qr-card .card-title { text-align: center; }
+.qr-card.clickable {
+  cursor: pointer;
+  transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+}
+.qr-card.clickable:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+}
+.expand-qr-icon {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  color: var(--op-text-secondary);
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+.qr-card.clickable:hover .expand-qr-icon {
+  opacity: 1;
+}
 .qr-wrapper {
   background: #ffffff;
   padding: 1rem;
@@ -171,199 +178,89 @@ body {
 
 /* Status & Earnings Card */
 .status-card .card-body { align-items: center; text-align: center; }
-.earnings-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-  width: 100%;
-  margin-bottom: 1.5rem;
-}
+.earnings-container { display: flex; flex-direction: column; align-items: center; gap: 1rem; width: 100%; margin-bottom: 1.5rem; }
 .radial-progress-container { position: relative; width: 90px; height: 90px; }
 .progress-ring-bg, .progress-ring-fg { fill: transparent; stroke-linecap: round; }
 .progress-ring-bg { stroke: var(--op-border-color); }
-.progress-ring-fg {
-  stroke: var(--op-success);
-  transform: rotate(-90deg);
-  transform-origin: 50% 50%;
-  transition: stroke-dashoffset 0.5s ease-out;
-}
-.progress-text {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--op-success);
-}
-.earnings-details {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-.earnings-amount {
-  font-size: 2.5rem;
-  font-weight: 800;
-  color: var(--op-text-primary);
-  line-height: 1.1;
-}
-.earnings-label {
-  font-size: 0.9rem;
-  color: var(--op-text-secondary);
-  margin-top: 0.25rem;
-}
-.stats-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.25rem; 
-  width: 100%;
-  border-top: 1px solid var(--op-border-color);
-  padding-top: 1.5rem;
-}
-.stat-item {
-  display: grid;
-  grid-template-columns: auto 1fr; 
-  align-items: center; 
-  text-align: left;
-  gap: 0.75rem;
-}
-.stat-details {
-  display: flex;
-  flex-direction: column;
-}
+.progress-ring-fg { stroke: var(--op-success); transform: rotate(-90deg); transform-origin: 50% 50%; transition: stroke-dashoffset 0.5s ease-out; }
+.progress-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.25rem; font-weight: 700; color: var(--op-success); }
+.earnings-details { display: flex; flex-direction: column; align-items: center; }
+.earnings-amount { font-size: 2.5rem; font-weight: 800; color: var(--op-text-primary); line-height: 1.1; }
+.earnings-label { font-size: 0.9rem; color: var(--op-text-secondary); margin-top: 0.25rem; }
+.stats-grid { display: grid; grid-template-columns: 1fr; gap: 1.25rem; width: 100%; border-top: 1px solid var(--op-border-color); padding-top: 1.5rem; }
+.stat-item { display: grid; grid-template-columns: auto 1fr; align-items: center; text-align: left; gap: 0.75rem; }
+.stat-details { display: flex; flex-direction: column; }
 .stat-item .material-icons { font-size: 1.75rem; color: var(--op-primary); }
 .stat-value { font-size: 1.1rem; font-weight: 700; color: var(--op-text-primary); }
 .stat-label { font-size: 0.8rem; color: var(--op-text-secondary); }
-
-/* --- THIS IS THE FIX: Reduced the size of the status indicator --- */
-.status-indicator {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background-color: var(--op-danger);
-  box-shadow: 0 0 8px var(--op-danger-glow);
-  transition: all 0.3s ease;
-  justify-self: center; 
-}
-.status-indicator.active {
-  background-color: var(--op-success);
-  box-shadow: 0 0 8px var(--op-success-glow);
-}
+.status-indicator { width: 8px; height: 8px; border-radius: 50%; background-color: var(--op-danger); box-shadow: 0 0 8px var(--op-danger-glow); transition: all 0.3s ease; justify-self: center; }
+.status-indicator.active { background-color: var(--op-success); box-shadow: 0 0 8px var(--op-success-glow); }
 .text-success { color: var(--op-success) !important; }
 .text-danger { color: var(--op-danger) !important; }
 
 /* Route Tracker Card */
 .route-card .card-title { text-align: left; }
-.route-timeline {
-  position: relative;
-  padding-left: 1.5rem;
-  margin-left: 0.5rem;
-  flex-grow: 1;
-  overflow-y: auto;
-}
-.route-timeline::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 2px;
-  height: 100%;
-  background-color: var(--op-border-color);
-}
-.route-stop {
-  display: flex;
-  align-items: flex-start;
-  position: relative;
-  padding: 0.75rem 0;
-  transition: all 0.3s;
-  border-radius: 0.75rem;
-}
-.stop-marker {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background-color: var(--op-border-color);
-  position: absolute;
-  left: -1.8rem;
-  top: 1.1rem;
-  border: 2px solid var(--op-card-bg);
-  transition: all 0.3s ease;
-}
+.route-timeline { position: relative; padding-left: 1.5rem; margin-left: 0.5rem; flex-grow: 1; overflow-y: auto; }
+.route-timeline::before { content: ''; position: absolute; top: 0; left: 0; width: 2px; height: 100%; background-color: var(--op-border-color); }
+.route-stop { display: flex; align-items: flex-start; position: relative; padding: 0.75rem 0; transition: all 0.3s; border-radius: 0.75rem; }
+.stop-marker { width: 10px; height: 10px; border-radius: 50%; background-color: var(--op-border-color); position: absolute; left: -1.8rem; top: 1.1rem; border: 2px solid var(--op-card-bg); transition: all 0.3s ease; }
 .stop-details { display: flex; flex-direction: column; }
 .stop-time { font-size: 0.9rem; font-weight: 600; color: var(--op-text-primary); }
 .stop-location { font-size: 1rem; color: var(--op-text-secondary); }
 .route-stop.completed { opacity: 0.6; }
 .route-stop.completed .stop-marker { background-color: var(--op-success); }
-.route-stop.current {
-  background-color: var(--op-primary-glow);
-  padding-left: 0.75rem;
-  margin-left: -0.75rem;
+.route-stop.current { background-color: var(--op-primary-glow); padding-left: 0.75rem; margin-left: -0.75rem; }
+.route-stop.current .stop-marker { background-color: var(--op-success); transform: scale(1.5); animation: pulse 2s infinite; }
+.route-stop.current .stop-time, .route-stop.current .stop-location { color: var(--op-success); font-weight: 700; }
+.eta-badge { position: absolute; right: 0.75rem; top: 0.9rem; background: var(--op-primary-glow); color: var(--op-primary); font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 0.5rem; }
+
+/* --- 6. MODAL STYLES --- */
+.modal-content {
+  background-color: var(--op-card-bg);
+  color: var(--op-text-primary);
+  border: 1px solid var(--op-border-color);
+  border-radius: 1rem;
 }
-.route-stop.current .stop-marker {
-  background-color: var(--op-success);
-  transform: scale(1.5);
-  animation: pulse 2s infinite;
+.modal-header {
+  border-bottom: 1px solid var(--op-border-color);
 }
-.route-stop.current .stop-time, .route-stop.current .stop-location {
-  color: var(--op-success);
-  font-weight: 700;
+.btn-close {
+  filter: invert(1) grayscale(100%) brightness(200%);
 }
-.eta-badge {
-  position: absolute;
-  right: 0.75rem;
-  top: 0.9rem;
-  background: var(--op-primary-glow);
-  color: var(--op-primary);
-  font-size: 0.7rem;
-  font-weight: 700;
-  padding: 0.2rem 0.5rem;
-  border-radius: 0.5rem;
+.qr-modal-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem !important;
+  gap: 1.5rem;
+}
+.qr-modal-wrapper {
+  background: #ffffff;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+}
+.instruction-text {
+  font-size: 0.9rem;
+  color: var(--op-text-secondary);
+  text-align: center;
+  max-width: 300px;
 }
 
-/* --- 6. Responsiveness & Fallbacks --- */
+/* --- 7. Responsiveness & Fallbacks --- */
 @media (max-width: 1200px) {
-  .dashboard-grid {
-    grid-template-columns: 1fr 1fr;
-    grid-template-areas:
-      'header qr'
-      'status route';
-  }
+  .dashboard-grid { grid-template-columns: 1fr 1fr; grid-template-areas: 'header qr' 'status route'; }
 }
 @media (max-width: 768px) {
-  .dashboard-grid {
-    grid-template-columns: 1fr;
-    grid-template-areas: 'header' 'qr' 'status' 'route';
-  }
+  .dashboard-grid { grid-template-columns: 1fr; grid-template-areas: 'header' 'qr' 'status' 'route'; }
 }
 
 .route-timeline::-webkit-scrollbar { width: 6px; }
 .route-timeline::-webkit-scrollbar-track { background: transparent; }
 .route-timeline::-webkit-scrollbar-thumb { background: var(--op-border-color); border-radius: 3px; }
 
-.no-assignment-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 2rem;
-  min-height: 60vh;
-}
-.no-assignment-container .icon {
-  font-size: 3.5rem;
-  color: var(--op-primary);
-  padding: 1.5rem;
-  background: var(--op-card-bg);
-  border-radius: 50%;
-  margin-bottom: 1.5rem;
-  border: 1px solid var(--op-border-color);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-}
-.no-assignment-container h2 {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: var(--op-text-primary);
-  margin-bottom: 0.5rem;
-}
+.no-assignment-container { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 2rem; min-height: 60vh; }
+.no-assignment-container .icon { font-size: 3.5rem; color: var(--op-primary); padding: 1.5rem; background: var(--op-card-bg); border-radius: 50%; margin-bottom: 1.5rem; border: 1px solid var(--op-border-color); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); }
+.no-assignment-container h2 { font-size: 1.5rem; font-weight: 600; color: var(--op-text-primary); margin-bottom: 0.5rem; }
 .no-assignment-container p { color: var(--op-text-secondary); max-width: 350px; }

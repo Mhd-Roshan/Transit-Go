@@ -4,7 +4,7 @@ import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet'
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useTrip } from "../../context/TripContext";
-import API from "../../api"; // Import the new API client
+import API from "../../api";
 import "../../styles/operatorRoutes.css";
 
 delete L.Icon.Default.prototype._getIconUrl;
@@ -42,7 +42,10 @@ function OperatorRoutesPage() {
   const [error, setError] = useState("");
 
   const {
-    isTripActive, currentBusPosition, selectedVehicle, setSelectedVehicle,
+    isTripActive, 
+    // --- THIS IS THE FIX: Get the setter function from the context ---
+    setIsTripActive,
+    currentBusPosition, selectedVehicle, setSelectedVehicle,
     startSimulation, endSimulation, currentDirection
   } = useTrip();
 
@@ -59,21 +62,31 @@ function OperatorRoutesPage() {
     setLoading(true);
     setError("");
     try {
-      // Use the new API client
       const res = await API.get("/assignments/my-assignment");
-      setMyAssignment(res.data);
-      setSelectedVehicle(res.data.vehicle);
+      const assignmentData = res.data;
+      setMyAssignment(assignmentData);
+      setSelectedVehicle(assignmentData.vehicle);
+
+      // --- THIS IS THE FIX: Sync frontend state with backend state on load ---
+      if (assignmentData.vehicle.status === 'On Route') {
+        setIsTripActive(true);
+      } else {
+        setIsTripActive(false);
+      }
+      // --- END OF FIX ---
+
     } catch (err) {
       if (err.response?.status === 404) {
         setMyAssignment(null);
         setSelectedVehicle(null);
+        setIsTripActive(false); // Ensure state is false if no assignment
       } else {
         setError(err.response?.data?.msg || "Could not load your assignment details.");
       }
     } finally {
       setLoading(false);
     }
-  }, [setSelectedVehicle]);
+  }, [setSelectedVehicle, setIsTripActive]);
 
   useEffect(() => {
     fetchMyAssignment();
@@ -81,11 +94,14 @@ function OperatorRoutesPage() {
 
   const handleTripToggle = () => {
     if (!myAssignment || !myAssignment.vehicle) return;
+    const vehicleId = myAssignment.vehicle._id;
+
     if (isTripActive) {
-      endSimulation(false, () => alert(`Trip with Vehicle ${myAssignment.vehicle.vehicleId} has been stopped.`));
+      endSimulation(vehicleId, false, () => alert(`Trip with Vehicle ${myAssignment.vehicle.vehicleId} has been stopped.`));
     } else {
       alert(`Starting trip with Vehicle ${myAssignment.vehicle.vehicleId}.`);
       startSimulation({
+        vehicleId,
         routeCoordinates,
         schedule: fullSchedule,
         onTripEnd: (completed) => {

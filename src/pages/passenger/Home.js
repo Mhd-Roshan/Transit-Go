@@ -7,8 +7,6 @@ import PassengerLayout from '../../layouts/PassengerLayout';
 import API from '../../api'; // Import the new API client
 import '../../styles/home.css';
 
-// Remove the local API instance definition
-
 function HomePage() {
   const navigate = useNavigate();
   const [balance, setBalance] = useState(0);
@@ -36,14 +34,13 @@ function HomePage() {
         setLoading(true);
         setError('');
         try {
-            // Use the global API client
             const [balanceRes, busesRes, tripStatusRes] = await Promise.all([
                 API.get("/payments/balance"),
                 API.get("/assignments/active"),
                 API.get("/trips/status")
             ]);
             setBalance(balanceRes.data.balance);
-            setUpcomingBuses(busesRes.data.slice(0, 4));
+            setUpcomingBuses(busesRes.data); // Keep the full list for the check
             setHasActiveTrip(tripStatusRes.data.hasActiveTrip);
         } catch (err) {
             console.error("Failed to fetch home page data.", err);
@@ -54,6 +51,24 @@ function HomePage() {
     };
     fetchAllData();
   }, []);
+  
+  const handleScanClick = async () => {
+    setError('');
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setError("Your browser does not support camera access.");
+      return;
+    }
+    try {
+      await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      setShowScanner(true);
+    } catch (err) {
+      if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+        setError("Camera permission was denied. Please enable it in your browser settings to scan QR codes.");
+      } else {
+        setError("Could not access the camera. Please ensure it is not being used by another app.");
+      }
+    }
+  };
   
   const handleScanSuccess = async (decodedText) => {
     setShowScanner(false);
@@ -71,7 +86,6 @@ function HomePage() {
         const endpoint = hasActiveTrip ? '/trips/scan-exit' : '/trips/scan-entry';
         const payload = { vehicleId, busLocation, timestamp };
         
-        // Use the global API client
         const res = await API.post(endpoint, payload);
 
         setScanResult({ status: 'success', message: res.data.msg });
@@ -105,8 +119,23 @@ function HomePage() {
         );
     }
 
+    // --- THIS IS THE FIX ---
+    // If the user is starting a trip AND there are no active buses, show a disabled card.
+    if (!hasActiveTrip && !loading && upcomingBuses.length === 0) {
+      return (
+        <div className="scan-pay-card scan-pay-card-disabled">
+            <div className="scan-pay-icon"><span className="material-icons-outlined">bus_alert</span></div>
+            <div className="scan-pay-text">
+                <h4>Scanning Unavailable</h4>
+                <p>There are no active buses currently in service.</p>
+            </div>
+        </div>
+      );
+    }
+    // --- END OF FIX ---
+
     return (
-        <div className="scan-pay-card" onClick={() => setShowScanner(true)}>
+        <div className="scan-pay-card" onClick={handleScanClick}>
             <div className="scan-pay-icon"><span className="material-icons-outlined">qr_code_scanner</span></div>
             <div className="scan-pay-text">
                 <h4>{hasActiveTrip ? 'Scan to Exit' : 'Scan to Enter'}</h4>
@@ -143,7 +172,7 @@ function HomePage() {
           <h3 className="section-title">Upcoming Buses</h3>
           {loading ? <div className="text-center p-3"><Spinner /></div> : (
               <div className="bus-list">
-                  {upcomingBuses.length > 0 ? upcomingBuses.map(bus => {
+                  {upcomingBuses.length > 0 ? upcomingBuses.slice(0, 4).map(bus => { // Use slice here for display
                       if (!bus || !bus.vehicle) return null;
                       const diffMinutes = Math.round((new Date(bus.departureTime) - new Date()) / 60000);
                       const departsInText = diffMinutes <= 0 ? 'Departing' : `In ${diffMinutes} min`;
@@ -175,10 +204,10 @@ function HomePage() {
           </div>
         </section>
 
-        <Modal show={showScanner} onHide={closeScanner} centered>
+        <Modal show={showScanner} onHide={closeScanner} centered size="lg">
           <Modal.Header closeButton><Modal.Title>Scan Bus QR Code</Modal.Title></Modal.Header>
           <Modal.Body className="scanner-modal-body">
-                <QrScanner onScanSuccess={handleScanSuccess} />
+                {showScanner && <QrScanner onScanSuccess={handleScanSuccess} />}
                 <p className="scanner-warning">
                   <span className="material-icons-outlined">center_focus_strong</span>
                   Position the QR code inside the frame to scan.

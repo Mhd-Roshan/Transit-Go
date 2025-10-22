@@ -33,10 +33,14 @@ const VehicleSchema = new mongoose.Schema({
   status: {
     type: String,
     required: true,
-    // --- THIS IS THE FIX ---
-    // Changed 'Working' to 'Active' to match the frontend and your request.
-    enum: ['Active', 'Under Maintenance', 'Inactive'], 
-    default: 'Active', // A new vehicle defaults to 'Active'
+    // --- THIS IS THE FIX: Added 'On Route' status ---
+    enum: ['Active', 'On Route', 'Under Maintenance', 'Inactive'], 
+    default: 'Active',
+  },
+  // --- THIS IS THE FIX: Added field to track live location ---
+  currentLocation: {
+    type: String,
+    default: null,
   },
 }, { 
   timestamps: true 

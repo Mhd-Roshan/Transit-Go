@@ -5,20 +5,6 @@ const TripContext = createContext();
 
 export const useTrip = () => useContext(TripContext);
 
-// Note: This schedule is now just for the frontend simulation.
-// Real fare calculation happens on the backend.
-const fullSchedule = [
-    { time: "8:00 AM", location: "Adivaram (Start)" },
-    { time: "8:30 AM", location: "Lakkidi View Point" },
-    { time: "8:45 AM", location: "Vythiri" },
-    { time: "9:00 AM", location: "Chundale" },
-    { time: "9:15 AM", location: "Kalpetta Bus Stand" },
-    { time: "9:45 AM", location: "Meenangadi" },
-    { time: "10:15 AM", location: "Sulthan Bathery" },
-    { time: "10:45 AM", location: "Pazhassi Park" },
-    { time: "11:00 AM", location: "Pulpally (End Point)" },
-];
-
 export const TripProvider = ({ children }) => {
   const [isTripActive, setIsTripActive] = useState(false);
   const [currentLeg, setCurrentLeg] = useState(0);
@@ -26,7 +12,7 @@ export const TripProvider = ({ children }) => {
   const [completedStops, setCompletedStops] = useState(new Set());
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [tripSchedule, setTripSchedule] = useState([]);
-  const [currentDirection, setCurrentDirection] = useState('forward'); // 'forward' or 'backward'
+  const [currentDirection, setCurrentDirection] = useState('forward');
 
   const movementIntervalRef = useRef(null);
   const scheduleIntervalRef = useRef(null);
@@ -36,9 +22,6 @@ export const TripProvider = ({ children }) => {
     clearInterval(scheduleIntervalRef.current);
   };
   
-  // This function is no longer needed in the context as data is fetched directly in components.
-  // const loadAssignment = useCallback(async () => { ... });
-
   const markStopAsComplete = useCallback((stopIndex) => {
     setCompletedStops(prev => new Set(prev).add(stopIndex));
   }, []);
@@ -47,8 +30,14 @@ export const TripProvider = ({ children }) => {
     setCompletedStops(new Set());
   }, []);
 
-  const endSimulation = useCallback((completed = false, onTripEnd) => {
+  const endSimulation = useCallback(async (vehicleId, completed = false, onTripEnd) => {
     clearAllIntervals();
+    try {
+      await API.post(`/vehicles/${vehicleId}/end-trip`);
+    } catch (error) {
+      console.error("Failed to notify backend of trip end:", error);
+    }
+
     if (completed && tripSchedule.length > 0) {
       const allStops = new Set(Array.from({ length: tripSchedule.length }, (_, i) => i));
       setCompletedStops(allStops);
@@ -57,9 +46,17 @@ export const TripProvider = ({ children }) => {
     if (typeof onTripEnd === 'function') onTripEnd(completed);
   }, [tripSchedule]);
 
-  const startSimulation = useCallback((config) => {
-    let { routeCoordinates, schedule, onTripEnd, interval = 8000 } = config; // Slower bus speed
-    if (!routeCoordinates || !schedule) return;
+  const startSimulation = useCallback(async (config) => {
+    let { vehicleId, routeCoordinates, schedule, onTripEnd, interval = 8000 } = config;
+    if (!vehicleId || !routeCoordinates || !schedule) return;
+
+    try {
+      await API.post(`/vehicles/${vehicleId}/start-trip`);
+    } catch (error) {
+      console.error("Failed to start trip on backend:", error);
+      alert("Error: Could not start trip on the server. The vehicle may already be on route.");
+      return; // Stop execution if backend fails
+    }
 
     clearAllIntervals();
     resetCompletedStops();
@@ -80,11 +77,16 @@ export const TripProvider = ({ children }) => {
                         setCurrentDirection('backward');
                         runTrip([...coords].reverse(), 0, 'backward');
                     } else {
-                        endSimulation(true, onTripEnd);
+                        endSimulation(vehicleId, true, onTripEnd);
                     }
                     return prevLeg;
                 }
                 setCurrentBusPosition(coords[nextLeg]);
+
+                const currentStop = schedule[Math.floor((nextLeg / (coords.length -1)) * (schedule.length -1))];
+                if (currentStop) {
+                    API.put(`/vehicles/${vehicleId}/update-location`, { location: currentStop.location });
+                }
                 return nextLeg;
             });
         }, interval);
@@ -94,7 +96,7 @@ export const TripProvider = ({ children }) => {
 
     let currentStopIndex = 0;
     const totalDuration = (routeCoordinates.length - 1) * interval;
-    const scheduleInterval = totalDuration / (schedule.length - 1);
+    const scheduleIntervalTime = totalDuration / (schedule.length - 1);
     scheduleIntervalRef.current = setInterval(() => {
         currentStopIndex++;
         if (currentStopIndex < schedule.length) {
@@ -102,12 +104,14 @@ export const TripProvider = ({ children }) => {
         } else {
             clearInterval(scheduleIntervalRef.current);
         }
-    }, scheduleInterval);
+    }, scheduleIntervalTime);
 
   }, [resetCompletedStops, markStopAsComplete, endSimulation]);
 
   const value = {
     completedStops, markStopAsComplete, resetCompletedStops, isTripActive,
+    // --- THIS IS THE FIX: Expose setIsTripActive for synchronization ---
+    setIsTripActive,
     currentLeg, currentBusPosition, selectedVehicle, setSelectedVehicle,
     tripSchedule, startSimulation, endSimulation, currentDirection
   };

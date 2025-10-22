@@ -1,12 +1,24 @@
 import React from 'react';
-import { useState, useEffect } from 'react';
-import { Card, Spinner, Alert } from 'react-bootstrap';
+import { useState, useEffect, useMemo } from 'react';
+import { Card, Spinner, Alert, Modal } from 'react-bootstrap'; // Import Modal
 import QRCode from 'react-qr-code';
 import { useTrip } from '../../context/TripContext';
-import API from '../../api'; // Import the new API client
+import API from '../../api';
 import '../../styles/opdashboard.css';
 
-// Remove the local API instance definition
+// Isolated LiveClock component to prevent re-renders
+const LiveClock = () => {
+  const [currentTime, setCurrentTime] = useState(new Date());
+  useEffect(() => {
+    const timerId = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timerId);
+  }, []);
+  return (
+    <p className="current-time-display">
+      {currentTime.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+    </p>
+  );
+};
 
 const schedule = [
   { time: '8:00 AM', location: 'Adivaram (Start)' },
@@ -42,53 +54,82 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [liveEarnings, setLiveEarnings] = useState(0);
-  const [currentTime, setCurrentTime] = useState(new Date());
   const [qrValue, setQrValue] = useState('');
+  const [showQrModal, setShowQrModal] = useState(false);
 
   const { completedStops, isTripActive, tripSchedule } = useTrip();
 
+  // FIX 1: Fetch static assignment data only once on component mount
   useEffect(() => {
-    const fetchData = async () => {
-      if (!assignment) setLoading(true); 
+    const fetchCoreData = async () => {
+      setLoading(true);
       setError('');
       try {
-        const [assignmentRes, earningsRes] = await Promise.all([
-            API.get('/assignments/my-assignment'),
-            API.get('/dashboard/operator-earnings')
-        ]);
+        const assignmentRes = await API.get('/assignments/my-assignment');
         setAssignment(assignmentRes.data);
-        setLiveEarnings(earningsRes.data.todayEarnings);
       } catch (err) {
         if (err.response?.status === 404) setAssignment(null);
-        else setError('Could not load dashboard data.');
+        else setError('Could not load assignment data.');
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
-  }, [isTripActive, assignment]); // Add assignment to dependency array
-
-  useEffect(() => {
-    if (assignment?.vehicle) {
-        const generateQr = () => {
-            const currentStop = tripSchedule[completedStops.size - 1]?.location || 'Unknown';
-            // Use the absolute URL for the QR code value
-            const qrUrl = `${window.location.origin}/pay?vehicle=${assignment.vehicle._id}&ts=${Date.now()}&loc=${encodeURIComponent(currentStop)}`;
-            setQrValue(qrUrl);
-        };
-        generateQr();
-        const qrInterval = setInterval(generateQr, 60000);
-        return () => clearInterval(qrInterval);
-    }
-  }, [assignment, completedStops.size, tripSchedule]);
-
-  useEffect(() => {
-    const timerId = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timerId);
+    fetchCoreData();
   }, []);
 
-  const tripProgress = Math.min((completedStops.size > 0 ? completedStops.size - 1 : 0) * (100 / (schedule.length - 1 || 1)), 100);
-  const nextStopIndex = isTripActive ? schedule.findIndex((_, index) => !completedStops.has(index)) : -1;
+  // FIX 1: Fetch dynamic earnings data and poll for updates periodically
+  useEffect(() => {
+    if (!assignment) return;
+
+    const fetchDynamicData = async () => {
+      try {
+        const earningsRes = await API.get('/dashboard/operator-earnings');
+        setLiveEarnings(earningsRes.data.todayEarnings);
+      } catch (error) {
+        console.error("Failed to refresh earnings", error);
+      }
+    };
+    
+    fetchDynamicData(); 
+
+    const intervalId = setInterval(fetchDynamicData, 60000); // Poll every minute
+
+    return () => clearInterval(intervalId);
+  }, [assignment, isTripActive]);
+
+  // FIX 2: Unify schedule source and generate dynamic QR code based on trip state
+  const displaySchedule = useMemo(() => 
+    tripSchedule.length > 0 ? tripSchedule : schedule, 
+    [tripSchedule]
+  );
+
+  useEffect(() => {
+    if (!assignment?.vehicle) return;
+    
+    const generateQr = () => {
+      let currentStopLocation = 'Unknown';
+      if (isTripActive && completedStops.size > 0) {
+        const lastCompletedIndex = Math.max(...completedStops);
+        currentStopLocation = displaySchedule[lastCompletedIndex]?.location || 'Unknown';
+      } else if (displaySchedule.length > 0) {
+        currentStopLocation = displaySchedule[0].location;
+      }
+
+      const qrUrl = `${window.location.origin}/pay?vehicle=${assignment.vehicle._id}&ts=${Date.now()}&loc=${encodeURIComponent(currentStopLocation)}`;
+      setQrValue(qrUrl);
+    };
+
+    generateQr();
+    const qrInterval = setInterval(generateQr, 60000); // Update QR every minute for timestamp
+    return () => clearInterval(qrInterval);
+  }, [assignment, isTripActive, completedStops, displaySchedule]);
+
+  // Update UI calculations to use the consistent `displaySchedule`
+  const tripProgress = Math.min((completedStops.size > 0 ? completedStops.size - 1 : 0) * (100 / (displaySchedule.length - 1 || 1)), 100);
+  const nextStopIndex = isTripActive ? displaySchedule.findIndex((_, index) => !completedStops.has(index)) : -1;
+  
+  const handleShowQrModal = () => setShowQrModal(true);
+  const handleCloseQrModal = () => setShowQrModal(false);
 
   const renderContent = () => {
     if (loading) return ( <div className="status-container"><Spinner animation="border" /><p>Loading Dashboard...</p></div> );
@@ -96,74 +137,99 @@ const Dashboard = () => {
     if (!assignment) return ( <div className="no-assignment-container"><span className="material-icons icon">no_transfer</span><h2>No Vehicle Assigned</h2><p>You cannot start a trip until an administrator assigns a vehicle to you.</p></div>);
 
     const { vehicle } = assignment;
-    const source = vehicle.source || schedule[0].location;
-    const destination = vehicle.destination || schedule[schedule.length - 1].location;
+    const source = vehicle.source || displaySchedule[0].location;
+    const destination = vehicle.destination || displaySchedule[displaySchedule.length - 1].location;
 
     return (
-      <div className="dashboard-grid">
-        <Card className="dashboard-card header-card" style={{ '--stagger-delay': '100ms' }}>
-          <Card.Body>
-            <div>
-              <h3 className="vehicle-id-header">{vehicle.vehicleId}</h3>
-              <p className="current-time-display">{currentTime.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</p>
+      <>
+        <div className="dashboard-grid">
+          <Card className="dashboard-card header-card" style={{ '--stagger-delay': '100ms' }}>
+            <Card.Body>
+              <div>
+                <h3 className="vehicle-id-header">{vehicle.vehicleId}</h3>
+                <LiveClock />
+              </div>
+              <p className="route-path-header">
+                <span>{source.split(' ')[0]}</span> <span className="material-icons">arrow_right_alt</span> <span>{destination.split(' ')[0]}</span>
+              </p>
+            </Card.Body>
+          </Card>
+
+          <Card 
+            className="dashboard-card qr-card clickable" 
+            style={{ '--stagger-delay': '200ms' }}
+            onClick={handleShowQrModal}
+          >
+            <Card.Body>
+              <span className="material-icons expand-qr-icon">zoom_in</span>
+              <Card.Title>Scan to Enter/Exit</Card.Title>
+              <div className="qr-wrapper">
+                {qrValue ? <QRCode value={qrValue} size={256} viewBox={`0 0 256 256`} style={{ height: 'auto', maxWidth: '100%', width: '100%'}}/> : <Spinner />}
+              </div>
+            </Card.Body>
+          </Card>
+
+          <Card className="dashboard-card status-card" style={{ '--stagger-delay': '300ms' }}>
+            <Card.Body>
+              <Card.Title>Live Status</Card.Title>
+              <div className="earnings-container">
+                <RadialProgress progress={tripProgress} />
+                <div className="earnings-details">
+                  <span className="earnings-amount">₹{(liveEarnings || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                  <span className="earnings-label">Today's Earnings</span>
+                </div>
+              </div>
+              <div className="stats-grid">
+                <div className="stat-item">
+                  <span className="material-icons">tour</span>
+                  <div className="stat-details"><span className="stat-value">{completedStops.size}/{displaySchedule.length}</span><span className="stat-label">Stops</span></div>
+                </div>
+                <div className="stat-item">
+                  <span className={`status-indicator ${isTripActive ? 'active' : ''}`}></span>
+                  <div className="stat-details"><span className={`stat-value ${isTripActive ? 'text-success' : 'text-danger'}`}>{isTripActive ? 'Active' : 'Ended'}</span><span className="stat-label">Trip Status</span></div>
+                </div>
+              </div>
+            </Card.Body>
+          </Card>
+
+          <Card className="dashboard-card route-card" style={{ '--stagger-delay': '400ms' }}>
+            <Card.Body>
+              <Card.Title>Live Route Tracker</Card.Title>
+              <div className="route-timeline">
+                {displaySchedule.map((item, index) => {
+                  const isCompleted = completedStops.has(index);
+                  const isCurrent = nextStopIndex === index;
+                  return (
+                    <div key={index} className={`route-stop ${isCompleted ? 'completed' : ''} ${isCurrent ? 'current' : ''}`}>
+                      <div className="stop-marker"></div>
+                      <div className="stop-details"><span className="stop-time">{item.time}</span><span className="stop-location">{item.location}</span></div>
+                      {isCurrent && <span className="eta-badge">EN ROUTE</span>}
+                    </div>
+                  );
+                })}
+              </div>
+            </Card.Body>
+          </Card>
+        </div>
+
+        <Modal show={showQrModal} onHide={handleCloseQrModal} centered size="lg">
+          <Modal.Header closeButton>
+            <Modal.Title>Scan for Vehicle: {vehicle.vehicleId}</Modal.Title>
+          </Modal.Header>
+          <Modal.Body className="qr-modal-body">
+            <div className="qr-modal-wrapper">
+              {qrValue ? (
+                <QRCode value={qrValue} size={320} />
+              ) : (
+                <Spinner animation="border" />
+              )}
             </div>
-            <p className="route-path-header">
-              <span>{source.split(' ')[0]}</span> <span className="material-icons">arrow_right_alt</span> <span>{destination.split(' ')[0]}</span>
+            <p className="instruction-text">
+              Passengers can scan this code to start or end their trip.
             </p>
-          </Card.Body>
-        </Card>
-
-        <Card className="dashboard-card qr-card" style={{ '--stagger-delay': '200ms' }}>
-          <Card.Body>
-            <Card.Title>Scan to Enter/Exit</Card.Title>
-            <div className="qr-wrapper">
-              {qrValue ? <QRCode value={qrValue} size={256} viewBox={`0 0 256 256`} style={{ height: 'auto', maxWidth: '100%', width: '100%'}}/> : <Spinner />}
-            </div>
-          </Card.Body>
-        </Card>
-
-        <Card className="dashboard-card status-card" style={{ '--stagger-delay': '300ms' }}>
-          <Card.Body>
-            <Card.Title>Live Status</Card.Title>
-            <div className="earnings-container">
-              <RadialProgress progress={tripProgress} />
-              <div className="earnings-details">
-                <span className="earnings-amount">₹{(liveEarnings || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
-                <span className="earnings-label">Today's Earnings</span>
-              </div>
-            </div>
-            <div className="stats-grid">
-              <div className="stat-item">
-                <span className="material-icons">tour</span>
-                <div className="stat-details"><span className="stat-value">{completedStops.size}/{schedule.length}</span><span className="stat-label">Stops</span></div>
-              </div>
-              <div className="stat-item">
-                <span className={`status-indicator ${isTripActive ? 'active' : ''}`}></span>
-                <div className="stat-details"><span className={`stat-value ${isTripActive ? 'text-success' : 'text-danger'}`}>{isTripActive ? 'Active' : 'Ended'}</span><span className="stat-label">Trip Status</span></div>
-              </div>
-            </div>
-          </Card.Body>
-        </Card>
-
-        <Card className="dashboard-card route-card" style={{ '--stagger-delay': '400ms' }}>
-          <Card.Body>
-            <Card.Title>Live Route Tracker</Card.Title>
-            <div className="route-timeline">
-              {schedule.map((item, index) => {
-                const isCompleted = completedStops.has(index);
-                const isCurrent = nextStopIndex === index;
-                return (
-                  <div key={index} className={`route-stop ${isCompleted ? 'completed' : ''} ${isCurrent ? 'current' : ''}`}>
-                    <div className="stop-marker"></div>
-                    <div className="stop-details"><span className="stop-time">{item.time}</span><span className="stop-location">{item.location}</span></div>
-                    {isCurrent && <span className="eta-badge">EN ROUTE</span>}
-                  </div>
-                );
-              })}
-            </div>
-          </Card.Body>
-        </Card>
-      </div>
+          </Modal.Body>
+        </Modal>
+      </>
     );
   };
 
