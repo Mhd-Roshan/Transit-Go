@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Modal, Button, Form, Spinner } from 'react-bootstrap';
-import axios from 'axios';
+import API from '../api'; // Import the new API client
 import '../styles/adminLayout.css';
 
 const AdminLayout = ({ children }) => {
@@ -19,10 +19,8 @@ const AdminLayout = ({ children }) => {
   useEffect(() => {
     const fetchReports = async () => {
       try {
-        const token = localStorage.getItem("token");
-        const res = await axios.get("http://localhost:5000/api/reports", {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        // Use the new API client
+        const res = await API.get("/reports");
         setReports(res.data);
       } catch (err) {
         console.error("Failed to fetch reports for notifications", err);
@@ -56,10 +54,9 @@ const AdminLayout = ({ children }) => {
     if (!replyText.trim() || !selectedReport) return;
     setIsSubmitting(true);
     try {
-      const token = localStorage.getItem("token");
-      const res = await axios.put(`http://localhost:5000/api/reports/${selectedReport._id}/reply`, 
-        { message: replyText },
-        { headers: { Authorization: `Bearer ${token}` } }
+      // Use the new API client
+      const res = await API.put(`/reports/${selectedReport._id}/reply`, 
+        { message: replyText }
       );
       setReports(reports.map(r => r._id === selectedReport._id ? res.data : r));
       setShowReplyModal(false);
@@ -75,14 +72,11 @@ const AdminLayout = ({ children }) => {
   return (
     <div className="admin-layout animate-fade-in">
       <header className="admin-header">
-        {/* --- THIS IS THE ONLY CHANGE IN THIS FILE --- */}
-        {/* We wrap the brand and the new user cluster in a container for flexbox control */}
         <div className="header-content">
             <div className="header-brand">
                 <span className="material-icons">directions_bus</span>
                 <h1>TransitGo</h1>
             </div>
-            {/* This new div groups the notification and user menu together */}
             <div className="header-user-cluster">
                 <div className="notification-wrapper">
                     <button 

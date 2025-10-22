@@ -1,12 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import axios from 'axios';
 import toast, { Toaster } from 'react-hot-toast';
 import AdminLayout from '../../layouts/AdminLayout';
+import API from '../../api'; // Import the new API client
 import '../../styles/viewReports.css'; 
 
-// --- THIS IS THE FIX ---
-
-// Helper function for relative time
 const timeAgo = (dateString) => {
     const date = new Date(dateString);
     const seconds = Math.floor((new Date() - date) / 1000);
@@ -23,7 +20,6 @@ const timeAgo = (dateString) => {
     return "just now";
 };
 
-// Helper to check if a date is today
 const isToday = (someDate) => {
     const today = new Date();
     const date = new Date(someDate);
@@ -40,16 +36,14 @@ function ViewReportsPage() {
   const [openReportId, setOpenReportId] = useState(null);
   const [filterStatus, setFilterStatus] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
-  const [viewMode, setViewMode] = useState('accordion'); // 'accordion' or 'list'
+  const [viewMode, setViewMode] = useState('accordion');
 
   const fetchReports = async () => {
     setLoading(true);
     setError('');
     try {
-        const token = localStorage.getItem("token");
-        const res = await axios.get("http://localhost:5000/api/reports", {
-            headers: { Authorization: `Bearer ${token}` }
-        });
+        // Use the new API client
+        const res = await API.get("/reports");
         setReports(res.data);
     } catch (err) {
         setError("Failed to fetch reports. Please try again later.");
@@ -70,11 +64,8 @@ function ViewReportsPage() {
 
     const toastId = toast.loading('Sending reply...');
     try {
-      const token = localStorage.getItem("token");
-      const res = await axios.put(`http://localhost:5000/api/reports/${reportId}/reply`, 
-        { message },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      // Use the new API client
+      const res = await API.put(`/reports/${reportId}/reply`, { message });
       setReports(reports.map(r => r._id === reportId ? res.data : r));
       setReplyText({ ...replyText, [reportId]: '' });
       toast.success('Reply sent and report resolved!', { id: toastId });
@@ -86,26 +77,19 @@ function ViewReportsPage() {
   const filteredReports = useMemo(() => {
     return reports.filter(report => {
       const matchesStatus = filterStatus === 'All' || report.status === filterStatus;
-      
       const searchTermLower = searchTerm.toLowerCase();
       const matchesSearch = !searchTerm || 
         (report.passenger?.fullName && report.passenger.fullName.toLowerCase().includes(searchTermLower)) ||
         (report.vehicle?.vehicleId && report.vehicle.vehicleId.toLowerCase().includes(searchTermLower)) ||
         (report.description && report.description.toLowerCase().includes(searchTermLower));
-        
       return matchesStatus && matchesSearch;
     });
   }, [reports, filterStatus, searchTerm]);
 
-  // Memoized stats for the top cards
   const reportStats = useMemo(() => {
     const pending = reports.filter(r => r.status === 'Pending').length;
     const resolvedToday = reports.filter(r => r.status === 'Resolved' && r.reply && isToday(r.reply.date)).length;
-    return {
-      total: reports.length,
-      pending,
-      resolvedToday,
-    };
+    return { total: reports.length, pending, resolvedToday };
   }, [reports]);
 
   return (
@@ -142,7 +126,6 @@ function ViewReportsPage() {
         {loading ? <p>Loading reports...</p> : error ? <div className="alert alert-danger">{error}</div> : 
           filteredReports.length > 0 ? (
             viewMode === 'accordion' ? (
-              // Accordion View
               <div className="report-accordion">
                 {filteredReports.map(report => (
                   <div key={report._id} className="report-accordion-item">
@@ -174,7 +157,6 @@ function ViewReportsPage() {
                 ))}
               </div>
             ) : (
-              // List View
               <div className="report-list-view">
                 {filteredReports.map(report => (
                   <div key={report._id} className="report-list-item">

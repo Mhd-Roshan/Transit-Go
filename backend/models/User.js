@@ -29,11 +29,16 @@ const UserSchema = new mongoose.Schema({
     enum: ['Pending', 'Approved'],
     default: 'Approved', // Passengers are approved by default
   },
-  // --- THIS IS THE REQUIRED UPDATE ---
   walletBalance: {
     type: Number,
     required: true,
-    default: 0, // All new users will start with a wallet balance of 0
+    default: 0,
+  },
+  // --- NEW: Reference to an ongoing trip ---
+  activeTrip: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Trip',
+    default: null,
   },
   date: {
     type: Date,

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Spinner } from 'react-bootstrap';
 import PassengerLayout from '../../layouts/PassengerLayout';
+import API from '../../api'; // Import the new API client
 import '../../styles/history.css';
 
 function HistoryPage() {
@@ -14,18 +14,12 @@ function HistoryPage() {
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      navigate('/login');
-      return;
-    }
     const fetchData = async () => {
       setLoading(true);
       setError('');
       try {
-        const tripRes = await axios.get("http://localhost:5000/api/trips/my-trips", {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        // Use the new API client. No headers needed.
+        const tripRes = await API.get("/trips/my-trips");
         const data = Array.isArray(tripRes.data) ? tripRes.data : [];
         setTrips(data);
         setFilteredTrips(data);
@@ -37,6 +31,11 @@ function HistoryPage() {
       }
     };
 
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate('/login');
+      return;
+    }
     fetchData();
   }, [navigate]);
 
@@ -73,14 +72,11 @@ function HistoryPage() {
           <div key={trip._id} className="trip-card">
             <div className="trip-card-icon"><span className="material-icons">directions_bus</span></div>
             <div className="trip-card-details">
-              <h4>{trip.origin || 'Start'} to {trip.destination}</h4>
+              <h4>{trip.origin || 'Start'} to {trip.destination || 'End'}</h4>
               <p>{new Date(trip.tripDate).toDateString()}</p>
             </div>
-            {/* --- THIS IS THE FIX --- */}
-            {/* Use `trip.amountPaid` if it exists, otherwise fall back to `trip.fare`. */}
-            {/* Also, provide a default of 0 to prevent crashes if neither exists. */}
             <div className="trip-card-fare">
-              <span>₹{(trip.amountPaid || trip.fare || 0).toFixed(2)}</span>
+              <span>₹{(trip.amountPaid || 0).toFixed(2)}</span>
             </div>
           </div>
         ))}

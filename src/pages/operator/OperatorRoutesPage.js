@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import axios from "axios";
 import { Spinner, Alert } from "react-bootstrap";
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useTrip } from "../../context/TripContext";
+import API from "../../api"; // Import the new API client
 import "../../styles/operatorRoutes.css";
 
-// --- Leaflet Icon Fix ---
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
@@ -19,40 +18,20 @@ const busIcon = new L.Icon({
     iconSize: [40, 40], iconAnchor: [20, 20], popupAnchor: [0, -20]
 });
 
-// --- UPDATED & REALISTIC SIMULATED ROUTE DATA (Kerala: Wayanad Route) ---
 const routeCoordinates = [
-  // Thamarassery to Lakkidi (Ghat Road)
-  [11.4555, 76.0155], // Start: Adivaram
-  [11.4810, 76.0180],
-  [11.5050, 76.0200],
-  [11.5160, 76.0210], // Lakkidi View Point
-  // Lakkidi to Vythiri
-  [11.5280, 76.0300],
-  [11.5490, 76.0410], // Vythiri
-  // Vythiri to Kalpetta
-  [11.5780, 76.0520], // Chundale
-  [11.6000, 76.0750],
-  [11.6100, 76.0840], // Kalpetta
-  // Kalpetta to Sulthan Bathery
-  [11.6250, 76.1250],
-  [11.6350, 76.1650], // Meenangadi
-  [11.6500, 76.2200],
-  [11.6600, 76.2550], // Sulthan Bathery
-  // Sulthan Bathery to Pulpally
-  [11.6950, 76.2200],
-  [11.7300, 76.1900],
-  [11.7750, 76.1700], // End: Pulpally
+  [11.4555, 76.0155], [11.4810, 76.0180], [11.5050, 76.0200],
+  [11.5160, 76.0210], [11.5280, 76.0300], [11.5490, 76.0410],
+  [11.5780, 76.0520], [11.6000, 76.0750], [11.6100, 76.0840],
+  [11.6250, 76.1250], [11.6350, 76.1650], [11.6500, 76.2200],
+  [11.6600, 76.2550], [11.6950, 76.2200], [11.7300, 76.1900],
+  [11.7750, 76.1700],
 ];
 
 const fullSchedule = [
-    { time: "8:00 AM", location: "Adivaram (Start)" },
-    { time: "8:30 AM", location: "Lakkidi View Point" },
-    { time: "8:45 AM", location: "Vythiri" },
-    { time: "9:00 AM", location: "Chundale" },
-    { time: "9:15 AM", location: "Kalpetta Bus Stand" },
-    { time: "9:45 AM", location: "Meenangadi" },
-    { time: "10:15 AM", location: "Sulthan Bathery" },
-    { time: "10:45 AM", location: "Pazhassi Park" },
+    { time: "8:00 AM", location: "Adivaram (Start)" }, { time: "8:30 AM", location: "Lakkidi View Point" },
+    { time: "8:45 AM", location: "Vythiri" }, { time: "9:00 AM", location: "Chundale" },
+    { time: "9:15 AM", location: "Kalpetta Bus Stand" }, { time: "9:45 AM", location: "Meenangadi" },
+    { time: "10:15 AM", location: "Sulthan Bathery" }, { time: "10:45 AM", location: "Pazhassi Park" },
     { time: "11:00 AM", location: "Pulpally (End Point)" },
 ];
 
@@ -63,12 +42,8 @@ function OperatorRoutesPage() {
   const [error, setError] = useState("");
 
   const {
-    isTripActive,
-    currentBusPosition,
-    selectedVehicle,
-    setSelectedVehicle,
-    startSimulation,
-    endSimulation,
+    isTripActive, currentBusPosition, selectedVehicle, setSelectedVehicle,
+    startSimulation, endSimulation, currentDirection
   } = useTrip();
 
   const mapRef = useRef(null);
@@ -84,9 +59,8 @@ function OperatorRoutesPage() {
     setLoading(true);
     setError("");
     try {
-      const token = localStorage.getItem("token");
-      const headers = { Authorization: `Bearer ${token}` };
-      const res = await axios.get("http://localhost:5000/api/assignments/my-assignment", { headers });
+      // Use the new API client
+      const res = await API.get("/assignments/my-assignment");
       setMyAssignment(res.data);
       setSelectedVehicle(res.data.vehicle);
     } catch (err) {
@@ -106,81 +80,59 @@ function OperatorRoutesPage() {
   }, [fetchMyAssignment]);
 
   const handleTripToggle = () => {
-    if (!myAssignment || !myAssignment.vehicle) {
-      alert("Cannot start trip without an assigned vehicle.");
-      return;
-    }
+    if (!myAssignment || !myAssignment.vehicle) return;
     if (isTripActive) {
-      endSimulation(false, () => {
-        alert(`Trip with Vehicle ${myAssignment.vehicle.vehicleId} has been stopped.`);
-      });
+      endSimulation(false, () => alert(`Trip with Vehicle ${myAssignment.vehicle.vehicleId} has been stopped.`));
     } else {
       alert(`Starting trip with Vehicle ${myAssignment.vehicle.vehicleId}.`);
       startSimulation({
         routeCoordinates,
         schedule: fullSchedule,
         onTripEnd: (completed) => {
-          if (completed) {
-            alert(`Trip with Vehicle ${myAssignment.vehicle.vehicleId} completed!`);
-          }
+          if (completed) alert(`Trip with Vehicle ${myAssignment.vehicle.vehicleId} completed!`);
         },
       });
     }
   };
-
+  
   const renderContent = () => {
     if (loading) return ( <div className="status-container"><Spinner animation="border" variant="primary" /><p className="mt-2">Loading Assignment...</p></div> );
     if (error) return ( <div className="status-container"><Alert variant="danger">{error}</Alert></div> );
     
-    // --- RENDER NO ASSIGNMENT VIEW ---
     if (!myAssignment || !myAssignment.vehicle) {
         return (
-            <div className="no-assignment-container">
-                <span className="material-icons icon">map</span>
-                <h2>No Active Route</h2>
-                <p>You must be assigned a vehicle by an administrator to view and start a route.</p>
-            </div>
+            <div className="no-assignment-container"><span className="material-icons icon">map</span><h2>No Active Route</h2><p>You must be assigned a vehicle by an administrator to view and start a route.</p></div>
         );
     }
 
-    // --- RENDER LIVE TRIP VIEW ---
+    const source = selectedVehicle.source || 'Adivaram';
+    const destination = selectedVehicle.destination || 'Pulpally';
+    const displaySource = currentDirection === 'forward' ? source : destination;
+    const displayDestination = currentDirection === 'forward' ? destination : source;
+
     return (
       <div className="live-trip-card">
         <div className="map-wrapper">
-          <MapContainer
-            center={currentBusPosition || routeCoordinates[0]}
-            zoom={13} // Adjusted zoom to better fit the initial route view
-            scrollWheelZoom={false}
-            className="leaflet-container"
-            ref={mapRef}
-          >
+          <MapContainer center={currentBusPosition || routeCoordinates[0]} zoom={13} scrollWheelZoom={false} className="leaflet-container" ref={mapRef}>
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
             <Polyline positions={routeCoordinates} color="#007aff" weight={5} />
             {isTripActive && currentBusPosition && selectedVehicle && (
-              <Marker position={currentBusPosition} icon={busIcon}>
-                <Popup>Vehicle: {selectedVehicle.vehicleId} (Live)</Popup>
-              </Marker>
+              <Marker position={currentBusPosition} icon={busIcon}><Popup>Vehicle: {selectedVehicle.vehicleId} (Live)</Popup></Marker>
             )}
           </MapContainer>
         </div>
         
         <div className="trip-controls">
           <div className="route-details">
-            <p className="route-label">
-                {selectedVehicle.model} ({selectedVehicle.vehicleId})
-            </p>
+            <p className="route-label">{selectedVehicle.model} ({selectedVehicle.vehicleId})</p>
             <h3 className="route-path">
-              <span>{selectedVehicle.source || 'Adivaram'}</span>
+              <span>{displaySource}</span>
               <span className="material-icons">east</span>
-              <span>{selectedVehicle.destination || 'Pulpally'}</span>
+              <span>{displayDestination}</span>
             </h3>
           </div>
           
-          <button 
-            className={`trip-toggle-btn ${isTripActive ? 'end-trip' : 'start-trip'}`}
-            onClick={handleTripToggle} 
-            disabled={!selectedVehicle}
-          >
+          <button className={`trip-toggle-btn ${isTripActive ? 'end-trip' : 'start-trip'}`} onClick={handleTripToggle} disabled={!selectedVehicle}>
             <span className="material-icons">{isTripActive ? 'stop_circle' : 'play_circle'}</span>
             {isTripActive ? 'End Trip' : 'Start Trip'}
           </button>
@@ -192,10 +144,7 @@ function OperatorRoutesPage() {
   return (
     <div className="operator-routes-page">
       <div className="page-header">
-        <div>
-            <h2 className="page-title">Live Trip Control</h2>
-            <p className="page-subtitle">Manage your active route and track your progress.</p>
-        </div>
+        <div><h2 className="page-title">Live Trip Control</h2><p className="page-subtitle">Manage your active route and track your progress.</p></div>
       </div>
       {renderContent()}
     </div>

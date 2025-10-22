@@ -1,15 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Spinner } from 'react-bootstrap';
 import PassengerLayout from '../../layouts/PassengerLayout';
+import API from '../../api'; // Import the new API client
 import '../../styles/timings.css';
 
 function TimingsPage() {
   const [routes, setRoutes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [fetchErrorDetails, setFetchErrorDetails] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
 
@@ -24,30 +23,15 @@ function TimingsPage() {
       setLoading(true);
       setError('');
       try {
-        const res = await axios.get("http://localhost:5000/api/assignments/active", {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        // Use the new API client
+        const res = await API.get("/assignments/active");
         setRoutes(res.data);
       } catch (err) {
-        // Capture detailed error information for debugging in UI
-        const details = {
-          status: err.response?.status ?? null,
-          data: err.response?.data ?? null,
-          message: err.message ?? String(err),
-        };
-        setFetchErrorDetails(details);
-
-        if (details.status === 401) {
-          setError('Your session has expired. Please log in again.');
-          localStorage.removeItem('token');
-          setTimeout(() => navigate('/login'), 2000);
-        } else if (details.status) {
-          console.error("Failed to load bus schedules:", details);
-          setError(`Failed to load bus schedules (HTTP ${details.status}). Please try again later.`);
-        } else {
-          console.error("Failed to load bus schedules:", details);
-          setError('Failed to load bus schedules. Please try again later.');
-        }
+        // The global error interceptor will handle 401s now.
+        // We just need to handle the display of a user-friendly message.
+        console.error("Failed to load bus schedules:", err);
+        const status = err.response?.status;
+        setError(`Failed to load bus schedules${status ? ` (HTTP ${status})` : ''}. Please try again later.`);
       } finally {
         setLoading(false);
       }
@@ -116,7 +100,6 @@ function TimingsPage() {
     <PassengerLayout>
       <div className="timings-page">
         <main className="timings-main">
-          {/* --- FIX: Combined hero and list into a single section --- */}
           <section className="schedules-section animate-fade-in">
             <div className="schedules-header">
               <div className="schedules-title-group">

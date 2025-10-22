@@ -1,11 +1,10 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
 import AuthLayout from "../layouts/AuthLayout";
+import API from "../api"; // Import the new API client
 import "../styles/signup.css";
 
 function SignupPage() {
-  // --- THIS IS THE CORRECTED LINE ---
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -21,7 +20,6 @@ function SignupPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
-  // State for password visibility
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
 
@@ -60,7 +58,8 @@ function SignupPage() {
     setErrors({});
     setIsSubmitting(true);
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/signup", {
+      // Use the new API client
+      const res = await API.post("/auth/signup", {
         fullName: formData.fullName,
         email: formData.email,
         phoneNumber: `+91${formData.phoneNumber}`,

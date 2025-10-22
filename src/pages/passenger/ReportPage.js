@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Spinner, Alert } from 'react-bootstrap';
 import PassengerLayout from '../../layouts/PassengerLayout';
+import API from '../../api'; // Import the new API client
 import '../../styles/report.css';
 
 function ReportPage() {
@@ -20,13 +20,12 @@ function ReportPage() {
   const [historyLoading, setHistoryLoading] = useState(true);
   const [historyError, setHistoryError] = useState('');
 
-  const fetchReportHistory = async (token) => {
+  const fetchReportHistory = async () => {
     setHistoryLoading(true);
     setHistoryError('');
     try {
-      const res = await axios.get("http://localhost:5000/api/reports/my-reports", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      // Use the new API client
+      const res = await API.get("/reports/my-reports");
       setReportHistory(res.data);
     } catch (err) {
       setHistoryError('Could not load your report history.');
@@ -42,9 +41,8 @@ function ReportPage() {
     const fetchVehicles = async () => {
       setLoading(true);
       try {
-        const res = await axios.get("http://localhost:5000/api/vehicles", {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        // Use the new API client
+        const res = await API.get("/vehicles");
         setVehicles(res.data);
       } catch (err) {
         console.error("Failed to fetch vehicles", err);
@@ -54,7 +52,7 @@ function ReportPage() {
     };
 
     fetchVehicles();
-    fetchReportHistory(token);
+    fetchReportHistory();
   }, [navigate]);
 
   const handleSubmit = async (e) => {
@@ -66,16 +64,17 @@ function ReportPage() {
     setIsSubmitting(true);
     setSubmitStatus({ success: null, message: '' });
     try {
-      const token = localStorage.getItem("token");
-      const res = await axios.post("http://localhost:5000/api/reports", 
-        { vehicleId: selectedVehicle, timeOfIncident, description },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      // Use the new API client
+      const res = await API.post("/reports", { 
+        vehicleId: selectedVehicle, 
+        timeOfIncident, 
+        description 
+      });
       setSubmitStatus({ success: true, message: res.data.msg });
       setSelectedVehicle('');
       setTimeOfIncident('');
       setDescription('');
-      fetchReportHistory(token);
+      fetchReportHistory(); // Refetch history after submission
     } catch (err) {
       setSubmitStatus({ success: false, message: err.response?.data?.msg || 'Submission failed.' });
     } finally {
@@ -91,10 +90,7 @@ function ReportPage() {
             <p className="page-subtitle">Submit a report about an incident or view your past submissions.</p>
         </div>
         
-        {/* --- NEW: Main container for the two-column layout --- */}
         <main className="report-main-grid">
-
-          {/* --- Column 1: Submission Form --- */}
           <div className="report-form-column">
             <div className="report-card">
               <h2 className="form-title">Submit a New Report</h2>
@@ -134,7 +130,6 @@ function ReportPage() {
             </div>
           </div>
 
-          {/* --- Column 2: Report History --- */}
           <div className="report-history-column">
             <h2 className="section-title">Your Report History</h2>
             {historyLoading ? (
@@ -175,4 +170,4 @@ function ReportPage() {
   );
 }
 
-export default ReportPage;
+export default ReportPage

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import AdminLayout from "../../layouts/AdminLayout";
+import API from "../../api"; // Import the new API client
 import "../../styles/userManagement.css";
 
 function UserManagementPage() {
@@ -14,15 +14,8 @@ function UserManagementPage() {
       setLoading(true);
       setError("");
       try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-          setError("Authentication failed. Please log in again.");
-          setLoading(false);
-          return;
-        }
-        const res = await axios.get("http://localhost:5000/api/users", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        // Use the new API client
+        const res = await API.get("/users");
         setUsers(res.data);
       } catch (err) {
         console.error("Failed to fetch users:", err);
@@ -35,11 +28,8 @@ function UserManagementPage() {
   }, []);
 
   const updateStatus = (id, status) => {
-    const token = localStorage.getItem("token");
-    axios
-      .put(`http://localhost:5000/api/users/${id}`, { status }, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+    // Use the new API client
+    API.put(`/users/${id}`, { status })
       .then((res) => {
         setUsers(users.map((user) => (user._id === id ? res.data : user)));
       })
@@ -48,11 +38,8 @@ function UserManagementPage() {
 
   const deleteUser = (id) => {
     if (window.confirm("Are you sure you want to permanently delete this user?")) {
-      const token = localStorage.getItem("token");
-      axios
-        .delete(`http://localhost:5000/api/users/${id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        })
+      // Use the new API client
+      API.delete(`/users/${id}`)
         .then(() => {
           setUsers(users.filter((user) => user._id !== id));
         })
@@ -88,7 +75,6 @@ function UserManagementPage() {
       <div className="um-cards">
         {filteredUsers.map((user, index) => (
           <div className="um-card" key={user._id} style={{ animationDelay: `${index * 50}ms` }}>
-            {/* --- HEADER (Unchanged) --- */}
             <div className="um-card-header">
               <img src={`https://i.pravatar.cc/150?u=${user._id}`} alt="User Avatar" className="um-card-avatar" />
               <div className="um-card-info">
@@ -102,7 +88,6 @@ function UserManagementPage() {
               )}
             </div>
 
-            {/* --- NEW: CARD BODY WITH MORE DETAILS --- */}
             <div className="um-card-body">
                 <div className="detail-item">
                     <span className="material-icons detail-icon">email</span>
@@ -118,7 +103,6 @@ function UserManagementPage() {
                 </div>
             </div>
 
-            {/* --- FOOTER (Unchanged) --- */}
             {user.role === 'Operator' && (
               <div className="um-card-footer">
                 {user.status === 'Pending' ? (

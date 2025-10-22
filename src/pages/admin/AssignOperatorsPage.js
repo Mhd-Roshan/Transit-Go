@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
-import axios from "axios";
 import AdminLayout from "../../layouts/AdminLayout";
+import API from "../../api"; // Import the new API client
 import "../../styles/assignOperators.css";
 
 function AssignOperatorsPage() {
@@ -23,14 +23,12 @@ function AssignOperatorsPage() {
     const fetchData = async () => {
       setLoading(true);
       setError("");
-      const token = localStorage.getItem("token");
-      const headers = { Authorization: `Bearer ${token}` };
-      
       try {
+        // Use the new API client
         const [userRes, vehicleRes, assignmentRes] = await Promise.all([
-          axios.get("http://localhost:5000/api/users", { headers }),
-          axios.get("http://localhost:5000/api/vehicles", { headers }),
-          axios.get("http://localhost:5000/api/assignments", { headers }),
+          API.get("/users"),
+          API.get("/vehicles"),
+          API.get("/assignments"),
         ]);
         
         const operators = userRes.data.filter(u => u.role === "Operator" && u.status === "Approved");
@@ -52,11 +50,10 @@ function AssignOperatorsPage() {
     setIsSubmitting(true);
     clearMessages();
     try {
-      const token = localStorage.getItem("token");
-      const res = await axios.post(
-        "http://localhost:5000/api/assignments",
-        { operatorId: selectedOperator, vehicleId: selectedVehicle },
-        { headers: { Authorization: `Bearer ${token}` } }
+      // Use the new API client
+      const res = await API.post(
+        "/assignments",
+        { operatorId: selectedOperator, vehicleId: selectedVehicle }
       );
       setAssignments([res.data, ...assignments]);
       setSuccess("Assignment created successfully!");
@@ -75,10 +72,8 @@ function AssignOperatorsPage() {
       const originalAssignments = [...assignments];
       setAssignments(assignments.filter(a => a._id !== assignmentIdToRemove));
       try {
-        const token = localStorage.getItem("token");
-        await axios.delete(`http://localhost:5000/api/assignments/${assignmentIdToRemove}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        // Use the new API client
+        await API.delete(`/assignments/${assignmentIdToRemove}`);
       } catch (err) {
         setAssignments(originalAssignments);
         setError("Failed to remove assignment. Please try again.");
@@ -156,8 +151,6 @@ function AssignOperatorsPage() {
             {assignments
               .filter(a => a.operator && a.vehicle)
               .map((a, index) => {
-                // --- THIS IS THE FIX ---
-                // Create a date object and check its validity before rendering
                 const assignmentDate = new Date(a.createdAt);
                 const isValidDate = !isNaN(assignmentDate);
 

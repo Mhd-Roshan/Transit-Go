@@ -1,10 +1,12 @@
 import React, { createContext, useState, useContext, useCallback, useRef } from 'react';
-import axios from 'axios';
+import API from '../api'; // Import the new API client
 
 const TripContext = createContext();
 
 export const useTrip = () => useContext(TripContext);
 
+// Note: This schedule is now just for the frontend simulation.
+// Real fare calculation happens on the backend.
 const fullSchedule = [
     { time: "8:00 AM", location: "Adivaram (Start)" },
     { time: "8:30 AM", location: "Lakkidi View Point" },
@@ -24,10 +26,7 @@ export const TripProvider = ({ children }) => {
   const [completedStops, setCompletedStops] = useState(new Set());
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [tripSchedule, setTripSchedule] = useState([]);
-
-  const [assignment, setAssignment] = useState(null);
-  const [assignmentLoading, setAssignmentLoading] = useState(true);
-  const [assignmentError, setAssignmentError] = useState('');
+  const [currentDirection, setCurrentDirection] = useState('forward'); // 'forward' or 'backward'
 
   const movementIntervalRef = useRef(null);
   const scheduleIntervalRef = useRef(null);
@@ -37,27 +36,8 @@ export const TripProvider = ({ children }) => {
     clearInterval(scheduleIntervalRef.current);
   };
   
-  const loadAssignment = useCallback(async () => {
-    setAssignmentLoading(true);
-    setAssignmentError('');
-    try {
-      const token = localStorage.getItem("token");
-      const res = await axios.get("http://localhost:5000/api/assignments/my-assignment", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setAssignment(res.data);
-      setSelectedVehicle(res.data.vehicle);
-      setTripSchedule(fullSchedule); 
-    } catch (err) {
-      if (err.response?.status === 404) {
-        setAssignment(null);
-      } else {
-        setAssignmentError("Could not load your assignment data.");
-      }
-    } finally {
-      setAssignmentLoading(false);
-    }
-  }, []);
+  // This function is no longer needed in the context as data is fetched directly in components.
+  // const loadAssignment = useCallback(async () => { ... });
 
   const markStopAsComplete = useCallback((stopIndex) => {
     setCompletedStops(prev => new Set(prev).add(stopIndex));
@@ -78,7 +58,7 @@ export const TripProvider = ({ children }) => {
   }, [tripSchedule]);
 
   const startSimulation = useCallback((config) => {
-    const { routeCoordinates, schedule, onTripEnd, interval = 5000 } = config;
+    let { routeCoordinates, schedule, onTripEnd, interval = 8000 } = config; // Slower bus speed
     if (!routeCoordinates || !schedule) return;
 
     clearAllIntervals();
@@ -88,38 +68,48 @@ export const TripProvider = ({ children }) => {
     setCurrentLeg(0);
     setCurrentBusPosition(routeCoordinates[0]);
     markStopAsComplete(0);
+    setCurrentDirection('forward');
 
-    movementIntervalRef.current = setInterval(() => {
-      setCurrentLeg(prevLeg => {
-        const nextLeg = prevLeg + 1;
-        if (nextLeg >= routeCoordinates.length) {
-          clearInterval(movementIntervalRef.current);
-          return prevLeg;
-        }
-        setCurrentBusPosition(routeCoordinates[nextLeg]);
-        return nextLeg;
-      });
-    }, interval);
+    const runTrip = (coords, legStart, direction) => {
+        movementIntervalRef.current = setInterval(() => {
+            setCurrentLeg(prevLeg => {
+                const nextLeg = prevLeg + 1;
+                if (nextLeg >= coords.length) {
+                    clearInterval(movementIntervalRef.current);
+                    if (direction === 'forward') {
+                        setCurrentDirection('backward');
+                        runTrip([...coords].reverse(), 0, 'backward');
+                    } else {
+                        endSimulation(true, onTripEnd);
+                    }
+                    return prevLeg;
+                }
+                setCurrentBusPosition(coords[nextLeg]);
+                return nextLeg;
+            });
+        }, interval);
+    };
+
+    runTrip(routeCoordinates, 0, 'forward');
 
     let currentStopIndex = 0;
     const totalDuration = (routeCoordinates.length - 1) * interval;
     const scheduleInterval = totalDuration / (schedule.length - 1);
-
     scheduleIntervalRef.current = setInterval(() => {
-      currentStopIndex++;
-      if (currentStopIndex < schedule.length) {
-        markStopAsComplete(currentStopIndex);
-      } else {
-        endSimulation(true, onTripEnd);
-      }
+        currentStopIndex++;
+        if (currentStopIndex < schedule.length) {
+            markStopAsComplete(currentStopIndex);
+        } else {
+            clearInterval(scheduleIntervalRef.current);
+        }
     }, scheduleInterval);
+
   }, [resetCompletedStops, markStopAsComplete, endSimulation]);
 
   const value = {
     completedStops, markStopAsComplete, resetCompletedStops, isTripActive,
     currentLeg, currentBusPosition, selectedVehicle, setSelectedVehicle,
-    tripSchedule, startSimulation, endSimulation,
-    assignment, assignmentLoading, assignmentError, loadAssignment
+    tripSchedule, startSimulation, endSimulation, currentDirection
   };
 
   return <TripContext.Provider value={value}>{children}</TripContext.Provider>;

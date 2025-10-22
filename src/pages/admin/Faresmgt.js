@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react"; 
-import axios from "axios";
 import { Spinner } from "react-bootstrap";
 import AdminLayout from "../../layouts/AdminLayout";
+import API from "../../api"; // Import the new API client
 import "../../styles/fares.css"; 
 
 function Faresmgt() {
@@ -18,15 +18,13 @@ function Faresmgt() {
     operatorId: ''
   });
 
-  // Fetch data for filter dropdowns
   useEffect(() => {
     const fetchFilterData = async () => {
-      const token = localStorage.getItem("token");
-      const headers = { Authorization: `Bearer ${token}` };
       try {
+        // Use the new API client
         const [vehiclesRes, usersRes] = await Promise.all([
-          axios.get("http://localhost:5000/api/vehicles", { headers }),
-          axios.get("http://localhost:5000/api/users", { headers }),
+          API.get("/vehicles"),
+          API.get("/users"),
         ]);
         setAllVehicles(vehiclesRes.data);
         setAllOperators(usersRes.data.filter(u => u.role === 'Operator'));
@@ -37,13 +35,11 @@ function Faresmgt() {
     fetchFilterData();
   }, []);
 
-  // Fetch revenue report whenever filters change
   useEffect(() => {
     const fetchRevenueReport = async () => {
       setLoading(true);
       setError("");
       try {
-        const token = localStorage.getItem("token");
         const params = {
           startDate: filters.startDate || undefined,
           endDate: filters.endDate || undefined,
@@ -51,10 +47,8 @@ function Faresmgt() {
           operatorId: filters.operatorId || undefined,
         };
 
-        const res = await axios.get(`http://localhost:5000/api/dashboard/revenue-report`, {
-          headers: { Authorization: `Bearer ${token}` },
-          params,
-        });
+        // Use the new API client
+        const res = await API.get(`/dashboard/revenue-report`, { params });
         setReportData(res.data);
       } catch (err) {
         setError("Failed to fetch revenue report.");
@@ -144,22 +138,18 @@ function Faresmgt() {
                       {isPayment ? 'credit_card' : 'payments'}
                     </span>
                   </div>
-                  {/* --- THIS IS THE FIX --- */}
                   <div className="collection-info">
-                    {/* Display the vehicle ID in the main description for passenger payments */}
                     <p className="main-detail">
-                        {isPayment && item.vehicleId 
-                            ? `${item.description} (Vehicle: ${item.vehicleId})` 
-                            : item.description}
+                        {item.description}{isPayment && item.vehicleId 
+                            ? ` (Vehicle: ${item.vehicleId})` 
+                            : ''}
                     </p>
-                    {/* Simplified sub-detail to show the user and date */}
                     <p className="sub-detail">
                       By: {item.userName || 'N/A'}
                       {' • '}
                       {new Date(item.date).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </p>
                   </div>
-                  {/* --- END OF FIX --- */}
                   <div className="collection-amount">
                     ₹{item.amount.toLocaleString('en-IN')}
                   </div>

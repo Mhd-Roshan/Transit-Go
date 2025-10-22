@@ -4,8 +4,39 @@ import User from '../models/User.js';
 import Vehicle from '../models/Vehicle.js';
 import Collection from '../models/Collection.js'; 
 import Transaction from '../models/Transaction.js';
+import Trip from '../models/Trip.js';
+import Assignment from '../models/Assignment.js'; // --- THIS IS THE FIX ---
 
 const router = express.Router();
+
+// --- NEW ROUTE for Operator Earnings ---
+// @route   GET api/dashboard/operator-earnings
+// @desc    Get today's earnings for the logged-in operator
+// @access  Private (Operator)
+router.get('/operator-earnings', authMiddleware, async (req, res) => {
+    try {
+        const assignment = await Assignment.findOne({ operator: req.user.id });
+        if (!assignment) {
+            return res.json({ todayEarnings: 0 });
+        }
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const trips = await Trip.find({
+            vehicle: assignment.vehicle,
+            status: 'Completed',
+            tripDate: { $gte: today }
+        });
+
+        const todayEarnings = trips.reduce((sum, trip) => sum + trip.amountPaid, 0);
+        res.json({ todayEarnings });
+
+    } catch (err) {
+        console.error("Error fetching operator earnings:", err.message);
+        res.status(500).send('Server Error');
+    }
+});
 
 // @route   GET api/dashboard/revenue-report
 // @desc    Get a combined list of passenger payments and operator collections
@@ -14,9 +45,6 @@ router.get('/revenue-report', authMiddleware, async (req, res) => {
         const { startDate, endDate, operatorId, vehicleId } = req.query;
         let combinedReport = [];
 
-        // --- Fetch Passenger Trip Payments ---
-        // --- THIS IS THE FIX ---
-        // Fetch debit transactions (amount < 0), which represent trip payments.
         const transactionQuery = { amount: { $lt: 0 } }; 
         if (startDate || endDate) {
             transactionQuery.createdAt = {};
@@ -24,8 +52,6 @@ router.get('/revenue-report', authMiddleware, async (req, res) => {
             if (endDate) transactionQuery.createdAt.$lte = new Date(`${endDate}T23:59:59.999Z`);
         }
         
-        // Note: The 'trip' field is not consistently populated, so we filter by amount type.
-        // We populate user and trip->vehicle for additional details if available.
         const transactions = await Transaction.find(transactionQuery)
           .populate('user', 'fullName')
           .populate({ 
@@ -43,7 +69,7 @@ router.get('/revenue-report', authMiddleware, async (req, res) => {
             combinedReport.push({
                 _id: tx._id, 
                 type: 'Passenger Payment', 
-                amount: Math.abs(tx.amount), // Use the absolute value for revenue display
+                amount: Math.abs(tx.amount),
                 date: tx.createdAt,
                 description: tx.description, 
                 userName: tx.user?.fullName, 
@@ -51,7 +77,6 @@ router.get('/revenue-report', authMiddleware, async (req, res) => {
             });
         });
 
-        // --- Fetch Operator Collections ---
         const collectionQuery = {};
         if (startDate || endDate) {
             collectionQuery.collectionDate = {};
@@ -97,7 +122,6 @@ router.get('/stats', authMiddleware, async (req, res) => {
       Collection.aggregate([
         { $group: { _id: null, total: { $sum: '$amount' } } },
       ]),
-      // Get the sum of all passenger trip payments (debits)
       Transaction.aggregate([
         { $match: { amount: { $lt: 0 } } }, 
         { $group: { _id: null, total: { $sum: '$amount' } } },
@@ -109,7 +133,6 @@ router.get('/stats', authMiddleware, async (req, res) => {
     ]);
 
     const collectionRevenue = totalCollectionResult[0]?.total || 0;
-    // Transaction revenue is negative, so we take its absolute value
     const transactionRevenue = Math.abs(totalTransactionResult[0]?.total || 0);
     const totalRevenue = collectionRevenue + transactionRevenue;
     

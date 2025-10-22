@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Image } from 'react-bootstrap';
 import jwtDecode from 'jwt-decode';
-import axios from 'axios';
+import API from '../api'; // Import the new API client
 import '../styles/passengerLayout.css';
 
 const PassengerLayout = ({ children }) => {
@@ -43,11 +43,9 @@ const PassengerLayout = ({ children }) => {
       navigate('/login');
     } else {
       const fetchReports = async () => {
-        const token = localStorage.getItem("token");
         try {
-          const res = await axios.get("http://localhost:5000/api/reports/my-reports", {
-            headers: { Authorization: `Bearer ${token}` }
-          });
+          // Use the new API client
+          const res = await API.get("/reports/my-reports");
           setReports(res.data);
         } catch (err) {
           console.error("Failed to fetch passenger reports for notifications:", err);
@@ -86,7 +84,6 @@ const PassengerLayout = ({ children }) => {
 
   return (
     <div className="passenger-layout">
-      {/* --- THIS IS THE UPDATED HEADER STRUCTURE --- */}
       <header className="passenger-header-glass">
         <div className="header-content">
           <div className="header-brand">

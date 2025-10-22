@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import { Modal, Button } from "react-bootstrap";
 import QRCode from "react-qr-code";
 import AdminLayout from "../../layouts/AdminLayout";
+import API from "../../api"; // Import the new API client
 import "../../styles/vehicle.css";
 
 function VehicleManagementPage() {
@@ -19,8 +19,6 @@ function VehicleManagementPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [vehicleIdError, setVehicleIdError] = useState("");
   
-  // --- THIS IS THE FIX ---
-  // State to manage if the main form is in "edit mode"
   const [editMode, setEditMode] = useState(false);
   const [currentVehicleDbId, setCurrentVehicleDbId] = useState(null);
 
@@ -33,10 +31,8 @@ function VehicleManagementPage() {
     setLoading(true);
     setError("");
     try {
-      const token = localStorage.getItem("token");
-      const res = await axios.get("http://localhost:5000/api/vehicles", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      // Use the new API client
+      const res = await API.get("/vehicles");
       setVehicles(res.data);
     } catch (err) {
       setError("Failed to fetch vehicles. Please try again.");
@@ -55,16 +51,9 @@ function VehicleManagementPage() {
   };
 
   const clearForm = () => {
-    setVehicleId("");
-    setModel("");
-    setCapacity("");
-    setSource("");
-    setDestination("");
-    setRegistrationDate("");
-    setVehicleIdError("");
-    setEditMode(false);
-    setCurrentVehicleDbId(null);
-    setError("");
+    setVehicleId(""); setModel(""); setCapacity("");
+    setSource(""); setDestination(""); setRegistrationDate("");
+    setVehicleIdError(""); setEditMode(false); setCurrentVehicleDbId(null); setError("");
   };
 
   const handleVehicleIdChange = (e) => {
@@ -78,35 +67,20 @@ function VehicleManagementPage() {
     }
   };
   
-  // --- THIS IS THE FIX: Function to check for existing vehicle ID ---
   const handleVehicleIdBlur = () => {
-    if (!vehicleId || vehicleIdError) {
-      return; // Don't check if the field is empty or format is invalid
-    }
+    if (!vehicleId || vehicleIdError) return;
     const existingVehicle = vehicles.find(v => v.vehicleId === vehicleId);
     if (existingVehicle) {
-      // Vehicle exists, enter edit mode and pre-fill form
-      setModel(existingVehicle.model);
-      setCapacity(existingVehicle.capacity);
-      setSource(existingVehicle.source);
-      setDestination(existingVehicle.destination);
+      setModel(existingVehicle.model); setCapacity(existingVehicle.capacity);
+      setSource(existingVehicle.source); setDestination(existingVehicle.destination);
       setRegistrationDate(formatDateForInput(existingVehicle.registrationDate));
-      setEditMode(true);
-      setCurrentVehicleDbId(existingVehicle._id);
+      setEditMode(true); setCurrentVehicleDbId(existingVehicle._id);
     } else {
-      // Vehicle does not exist, ensure we are in create mode
-      // and clear other fields in case user is changing from an existing ID to a new one
-      setModel("");
-      setCapacity("");
-      setSource("");
-      setDestination("");
-      setRegistrationDate("");
-      setEditMode(false);
-      setCurrentVehicleDbId(null);
+      setModel(""); setCapacity(""); setSource(""); setDestination("");
+      setRegistrationDate(""); setEditMode(false); setCurrentVehicleDbId(null);
     }
   };
 
-  // --- THIS IS THE FIX: Unified form submission handler ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (vehicleIdError) return;
@@ -118,20 +92,18 @@ function VehicleManagementPage() {
     setError("");
     
     const vehicleData = { vehicleId, model, capacity, source, destination, registrationDate };
-    const token = localStorage.getItem("token");
-    const headers = { headers: { Authorization: `Bearer ${token}` } };
 
     try {
       if (editMode) {
-        // --- UPDATE EXISTING VEHICLE ---
-        const res = await axios.put(`http://localhost:5000/api/vehicles/${currentVehicleDbId}`, vehicleData, headers);
+        // Use the new API client
+        const res = await API.put(`/vehicles/${currentVehicleDbId}`, vehicleData);
         setVehicles(vehicles.map(v => v._id === currentVehicleDbId ? res.data : v));
       } else {
-        // --- CREATE NEW VEHICLE ---
-        const res = await axios.post("http://localhost:5000/api/vehicles", vehicleData, headers);
+        // Use the new API client
+        const res = await API.post("/vehicles", vehicleData);
         setVehicles([res.data, ...vehicles]);
       }
-      clearForm(); // Clear form on successful submission
+      clearForm();
     } catch (err) {
       setError(err.response?.data?.msg || `Failed to ${editMode ? 'update' : 'register'} vehicle.`);
     } finally {
@@ -142,38 +114,24 @@ function VehicleManagementPage() {
 
   const handleEditClick = (vehicle) => {
     const regDate = vehicle.registrationDate ? new Date(vehicle.registrationDate).toISOString().split('T')[0] : '';
-    setEditingVehicle({
-        ...vehicle,
-        registrationDate: regDate
-    });
+    setEditingVehicle({ ...vehicle, registrationDate: regDate });
     setShowEditModal(true);
   };
 
   const handleCloseModal = () => {
-    setShowEditModal(false);
-    setEditingVehicle(null);
+    setShowEditModal(false); setEditingVehicle(null);
   };
 
   const handleUpdateSubmit = async () => {
     if (!editingVehicle) return;
     try {
-        const token = localStorage.getItem("token");
-        
         const updatedData = { 
-          source: editingVehicle.source, 
-          destination: editingVehicle.destination, 
-          model: editingVehicle.model, 
-          capacity: editingVehicle.capacity,
-          status: editingVehicle.status,
-          registrationDate: editingVehicle.registrationDate
+          source: editingVehicle.source, destination: editingVehicle.destination, 
+          model: editingVehicle.model, capacity: editingVehicle.capacity,
+          status: editingVehicle.status, registrationDate: editingVehicle.registrationDate
         };
-
-        const res = await axios.put(
-            `http://localhost:5000/api/vehicles/${editingVehicle._id}`,
-            updatedData,
-            { headers: { Authorization: `Bearer ${token}` } }
-        );
-
+        // Use the new API client
+        const res = await API.put(`/vehicles/${editingVehicle._id}`, updatedData);
         setVehicles(vehicles.map(v => v._id === editingVehicle._id ? res.data : v));
         handleCloseModal();
     } catch (err) {
@@ -185,10 +143,8 @@ function VehicleManagementPage() {
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this vehicle? This action cannot be undone.")) {
       try {
-        const token = localStorage.getItem("token");
-        await axios.delete(`http://localhost:5000/api/vehicles/${id}`, {
-            headers: { Authorization: `Bearer ${token}` },
-        });
+        // Use the new API client
+        await API.delete(`/vehicles/${id}`);
         setVehicles(vehicles.filter(v => v._id !== id));
       } catch (err) {
           setError("Failed to delete vehicle. It may be currently assigned to an operator.");
@@ -198,7 +154,7 @@ function VehicleManagementPage() {
 
   const handleShowQR = (vehicle) => { setSelectedVehicleForQR(vehicle); setShowQRModal(true); };
   const handleCloseQRModal = () => { setSelectedVehicleForQR(null); setShowQRModal(false); };
-  const handlePrintQR = () => { window.print(); };
+  const handlePrintQR = () => window.print();
 
   return (
     <AdminLayout>
@@ -212,15 +168,7 @@ function VehicleManagementPage() {
             <div className="form-row">
               <div className="form-group">
                 <label htmlFor="vehicleId">Vehicle ID / Number</label>
-                <input 
-                  type="text" 
-                  id="vehicleId" 
-                  value={vehicleId} 
-                  onChange={handleVehicleIdChange}
-                  onBlur={handleVehicleIdBlur} // <<-- ADDED ONBLUR EVENT
-                  className={vehicleIdError ? 'input-error' : ''} 
-                  disabled={isSubmitting} 
-                />
+                <input type="text" id="vehicleId" value={vehicleId} onChange={handleVehicleIdChange} onBlur={handleVehicleIdBlur} className={vehicleIdError ? 'input-error' : ''} disabled={isSubmitting} />
                 {vehicleIdError && <p className="input-error-message">{vehicleIdError}</p>}
                 {editMode && <p className="input-error-message" style={{color: 'var(--admin-primary)'}}>Update mode: Modifying existing vehicle.</p>}
               </div>
@@ -232,7 +180,6 @@ function VehicleManagementPage() {
               <div className="form-group"><label htmlFor="destination">Destination</label><input type="text" id="destination" value={destination} onChange={(e) => setDestination(e.target.value)} disabled={isSubmitting} /></div>
               <div className="form-group"><label htmlFor="registrationDate">Registration Date</label><input type="date" id="registrationDate" value={registrationDate} onChange={(e) => setRegistrationDate(e.target.value)} disabled={isSubmitting} /></div>
             </div>
-            {/* --- THIS IS THE FIX: DYNAMIC BUTTON --- */}
             <button type="submit" className="register-btn" disabled={isSubmitting}>
                 <span className="material-icons">{editMode ? 'save' : 'add_circle'}</span>
                 {isSubmitting ? "Submitting..." : (editMode ? "Update Vehicle Details" : "Register Vehicle")}
@@ -283,7 +230,7 @@ function VehicleManagementPage() {
         <Modal.Footer><Button variant="secondary" onClick={handleCloseModal}>Close</Button><Button variant="primary" onClick={handleUpdateSubmit}>Save Changes</Button></Modal.Footer>
       </Modal>
 
-      {selectedVehicleForQR && (<Modal show={showQRModal} onHide={handleCloseQRModal} centered><Modal.Header closeButton><Modal.Title>QR Code for {selectedVehicleForQR.vehicleId}</Modal.Title></Modal.Header><Modal.Body className="qr-modal-body"><h5>{selectedVehicleForQR.model}</h5><div className="qr-code-wrapper"><QRCode value={`https://your-app-domain.com/pay?vehicle=${selectedVehicleForQR._id}`} size={220} /></div><p>Passengers can scan this code to initiate payment for this vehicle.</p></Modal.Body><Modal.Footer><Button variant="secondary" onClick={handleCloseQRModal}>Close</Button><Button variant="primary" onClick={handlePrintQR}><span className="material-icons" style={{ fontSize: '1rem', marginRight: '0.5rem' }}>print</span>Print</Button></Modal.Footer></Modal>)}
+      {selectedVehicleForQR && (<Modal show={showQRModal} onHide={handleCloseQRModal} centered><Modal.Header closeButton><Modal.Title>QR Code for {selectedVehicleForQR.vehicleId}</Modal.Title></Modal.Header><Modal.Body className="qr-modal-body"><h5>{selectedVehicleForQR.model}</h5><div className="qr-code-wrapper"><QRCode value={`${window.location.origin}/pay?vehicle=${selectedVehicleForQR._id}`} size={220} /></div><p>Passengers can scan this code to initiate payment for this vehicle.</p></Modal.Body><Modal.Footer><Button variant="secondary" onClick={handleCloseQRModal}>Close</Button><Button variant="primary" onClick={handlePrintQR}><span className="material-icons" style={{ fontSize: '1rem', marginRight: '0.5rem' }}>print</span>Print</Button></Modal.Footer></Modal>)}
     </AdminLayout>
   );
 }

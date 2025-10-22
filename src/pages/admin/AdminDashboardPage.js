@@ -1,32 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import AdminLayout from '../../layouts/AdminLayout';
+import API from '../../api'; // Import the new API client
 import '../../styles/adminDashboard.css';
-// Import Chart.js components
 import { Line } from 'react-chartjs-2';
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Filler,
-  Legend,
+  Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Filler, Legend,
 } from 'chart.js';
 
-// Register Chart.js components
 ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Filler,
-  Legend
+  CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Filler, Legend
 );
 
 const getPastSevenDays = () => {
@@ -51,8 +34,6 @@ const AdminDashboardPage = () => {
     datasets: [],
   });
   const navigate = useNavigate();
-  // No longer need userName, but we can keep it for future use if you like
-  // const userName = "Admin"; 
 
   useEffect(() => {
     const fetchData = async () => {
@@ -64,17 +45,16 @@ const AdminDashboardPage = () => {
           navigate('/login');
           return;
         }
-        const headers = { Authorization: `Bearer ${token}` };
 
+        // Use the new API client
         const [statsRes, reportsRes] = await Promise.all([
-            axios.get("http://localhost:5000/api/dashboard/stats", { headers }),
-            axios.get("http://localhost:5000/api/reports", { headers })
+            API.get("/dashboard/stats"),
+            API.get("/reports")
         ]);
 
         setStats(statsRes.data);
         setReports(reportsRes.data);
 
-        // Generate dynamic chart data based on stats
         const totalUsers = statsRes.data.totalUsers || 50;
         const baseTraffic = Math.max(10, Math.round(totalUsers / 2));
         const dynamicTraffic = Array.from({ length: 7 }, () => 
@@ -93,13 +73,9 @@ const AdminDashboardPage = () => {
         });
 
       } catch (err) {
-        if (err.response && err.response.status === 401) {
-          localStorage.removeItem('token');
-          navigate('/login');
-        } else {
-          setError("Could not load all dashboard data. Please try again.");
-          console.error("Dashboard fetch error:", err);
-        }
+        // Global interceptor will handle 401, just show a message here
+        setError("Could not load all dashboard data. Please try again.");
+        console.error("Dashboard fetch error:", err);
       } finally {
         setLoading(false);
       }
@@ -124,7 +100,6 @@ const AdminDashboardPage = () => {
   return (
     <AdminLayout>
       <div className="dashboard-page animate-fade-in">
-        {/* --- UPDATED TEXT --- */}
         <h2 className="page-title">Dashboard Overview</h2>
         <p className="page-subtitle">A real-time snapshot of your transit system's performance.</p>
 
@@ -151,7 +126,6 @@ const AdminDashboardPage = () => {
             </div>
 
             <div className="dashboard-grid">
-              {/* Left Column */}
               <div className="main-chart-container">
                 <div className="chart-card" style={{ animationDelay: '400ms' }}>
                   <div className="chart-header">
@@ -175,7 +149,6 @@ const AdminDashboardPage = () => {
                 </div>
               </div>
 
-              {/* Right Column */}
               <div className="right-feed-column">
                 <div className="reports-overview-card" style={{ animationDelay: '600ms' }}>
                     <div className="activity-header">

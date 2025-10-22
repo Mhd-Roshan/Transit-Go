@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
 import jwtDecode from "jwt-decode";
 import { Spinner } from "react-bootstrap";
 import AuthLayout from "../layouts/AuthLayout";
+import API from "../api"; // Import the new API client
 import "../styles/login.css";
 
 function LoginPage() {
@@ -19,7 +19,8 @@ function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/login", {
+      // Use the new API client. No need for full URL or headers.
+      const res = await API.post("/auth/login", {
         email,
         password,
       });
@@ -57,7 +58,6 @@ function LoginPage() {
           {error && <p className="error-message">{error}</p>}
 
           <label htmlFor="email">Email Address</label>
-          {/* --- CHANGE: Wrap the email input for consistent styling --- */}
           <div className="input-wrapper">
             <input
               type="email"
@@ -76,7 +76,6 @@ function LoginPage() {
             <a href="/forgot-password" className="forgot">Forgot Password?</a>
           </div>
 
-          {/* This wrapper now shares styles with the email wrapper */}
           <div className="input-wrapper password-wrapper">
             <input
               type={passwordVisible ? "text" : "password"}

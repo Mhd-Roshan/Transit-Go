@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Spinner, Form, Alert } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import PassengerLayout from '../../layouts/PassengerLayout';
+import API from '../../api'; // Import the new API client
 import '../../styles/payment.css';
 
-// Helper function to calculate time left for the 24-hour deadline
 const calculateTimeLeft = (createdAt) => {
     if (!createdAt) return null;
-    const deadline = new Date(createdAt).getTime() + 24 * 60 * 60 * 1000; // 24 hours from creation
+    const deadline = new Date(createdAt).getTime() + 24 * 60 * 60 * 1000;
     const now = new Date().getTime();
     const difference = deadline - now;
 
@@ -16,7 +15,7 @@ const calculateTimeLeft = (createdAt) => {
         return { total: 0, hours: '00', minutes: '00', seconds: '00' };
     }
 
-    const hours = Math.floor(difference / (1000 * 60 * 60)); // Total hours left
+    const hours = Math.floor(difference / (1000 * 60 * 60));
     const minutes = Math.floor((difference / 1000 / 60) % 60);
     const seconds = Math.floor((difference / 1000) % 60);
 
@@ -64,10 +63,10 @@ function PaymentPage() {
       setLoading(true);
       setError('');
       try {
-        const headers = { Authorization: `Bearer ${token}` };
+        // Use the global API client
         const [balanceRes, transactionsRes] = await Promise.all([
-            axios.get("http://localhost:5000/api/payments/balance", { headers }),
-            axios.get("http://localhost:5000/api/payments/transactions", { headers }),
+            API.get("/payments/balance"),
+            API.get("/payments/transactions"),
         ]);
         
         setBalance(balanceRes.data.balance);
@@ -100,21 +99,18 @@ function PaymentPage() {
     setIsProcessing(true);
     setError('');
     try {
-      const token = localStorage.getItem("token");
-      const headers = { Authorization: `Bearer ${token}` };
+      // Use the global API client
+      const chargeRes = await API.post("/payments/charge", { 
+          amount: pendingTrip.amount, 
+          description: `Trip to ${pendingTrip.destination}` 
+      });
 
-      const chargeRes = await axios.post("http://localhost:5000/api/payments/charge",
-        { amount: pendingTrip.amount, description: `Trip to ${pendingTrip.destination}` },
-        { headers }
-      );
-
-      // --- THIS IS THE FIX ---
-      // Send both fare values when creating the final trip record
-      await axios.post("http://localhost:5000/api/trips", {
+      // Use the global API client
+      await API.post("/trips", {
           destination: pendingTrip.destination,
           amountPaid: pendingTrip.amount,
-          calculatedFare: pendingTrip.calculatedFare || pendingTrip.amount // Fallback for older pending trips
-      }, { headers });
+          calculatedFare: pendingTrip.calculatedFare || pendingTrip.amount
+      });
 
       setBalance(chargeRes.data.newBalance);
       setTransactions(prev => [chargeRes.data.newTransaction, ...prev]);
@@ -139,11 +135,8 @@ function PaymentPage() {
     setAddMoneyError('');
     setIsProcessing(true);
     try {
-      const token = localStorage.getItem("token");
-      const res = await axios.post("http://localhost:5000/api/payments/add-money",
-        { amount },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      // Use the global API client
+      const res = await API.post("/payments/add-money", { amount });
       setBalance(res.data.newBalance);
       setTransactions(prev => [res.data.newTransaction, ...prev]);
       setShowAddMoneyModal(false);
@@ -288,4 +281,4 @@ function PaymentPage() {
   );
 }
 
-export default PaymentPage;
+export default PaymentPage

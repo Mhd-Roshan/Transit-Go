@@ -6,24 +6,33 @@ const TripSchema = new mongoose.Schema({
     ref: 'user',
     required: true,
   },
+  // --- NEW: Link to the vehicle used for the trip ---
+  vehicle: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Vehicle',
+    required: true,
+  },
   origin: {
     type: String,
-    // required: true, // --- THIS IS THE FIX: The field is now optional ---
+    required: true, 
   },
   destination: {
     type: String,
-    required: true,
+    // Destination is not required until the trip ends
   },
-  // --- THIS IS THE FIX ---
-  // Renamed 'fare' to 'amountPaid' to be more specific
   amountPaid: {
     type: Number,
-    required: true,
+    default: 0,
   },
-  // Added a new field to store the original fare before any discounts/adjustments
   calculatedFare: {
     type: Number,
-    required: true,
+    default: 0,
+  },
+  // --- NEW: Status to track the trip's state ---
+  status: {
+    type: String,
+    enum: ['Ongoing', 'Completed', 'Incomplete'],
+    default: 'Ongoing',
   },
   tripDate: {
     type: Date,
