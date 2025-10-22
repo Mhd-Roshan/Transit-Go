@@ -93,6 +93,6 @@ app.use("/api/utility", utilityRoutes); // Register the utility route for seedin
 
 // --- Server Initialization ---
 // Define the port from environment variables
-const PORT = 3000;
+const PORT = 5000;
 // Start the Express server
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

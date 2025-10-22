@@ -54,7 +54,7 @@ module.exports = {
       // Any request that starts with '/api' will be forwarded.
       '/api': {
         // Target your backend server
-        target: 'http://localhost:3000',
+        target: 'http://localhost:5000',
         // This is recommended for avoiding issues with virtual hosts
         changeOrigin: true,
       },
